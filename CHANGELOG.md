@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 1.3 — [`91b446b`](../../commit/91b446b72bcbe007d6c92d2e36d8e0bd6fc8bf2d)
+
+- Auto-update UI when wp-config.php is modified externally (e.g. edited by hand in a text editor)
+- Main process uses `fs.watch` to observe wp-config.php per site, managed via `supercharged:watch-site` / `supercharged:unwatch-site` IPC calls
+- On file change, re-fetches constants via WP-CLI, updates cache, and pushes new values to the renderer via `sendIPCEvent`
+- Renderer listens for `supercharged:debug-constants-changed` on `ipcRenderer` and updates switch states in real time
+- Watcher lifecycle tied to component mount/unmount — starts when viewing a site, stops when navigating away
+
 ## Version 1.2 — [`f5c2e0f`](../../commit/f5c2e0fa18db0fab961fbcfb860f75c5c7b37209)
 
 - Invalidate cache when wp-config.php is modified externally (e.g. edited by hand)
