@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.3.1 — [`d4f37ed`](../../commit/d4f37ed643b3bef1e99b7e257f0f66c3206835d8)
+
+- Disable individual switch while its WP-CLI `set` call is in flight, re-enable on completion or failure
+- Per-constant `updating` state so toggling one switch doesn't block the others
+
 ## Version 1.3 — [`91b446b`](../../commit/91b446b72bcbe007d6c92d2e36d8e0bd6fc8bf2d)
 
 - Auto-update UI when wp-config.php is modified externally (e.g. edited by hand in a text editor)
