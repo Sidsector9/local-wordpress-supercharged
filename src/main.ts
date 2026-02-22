@@ -65,6 +65,7 @@ export default function (context: LocalMain.AddonMainContext): void {
 	});
 
 	const watchers = new Map<string, fs.FSWatcher>();
+	const selfWriting = new Set<string>();
 
 	function watchSite(siteId: string): void {
 		if (watchers.has(siteId)) {
@@ -77,6 +78,10 @@ export default function (context: LocalMain.AddonMainContext): void {
 		try {
 			const watcher = fs.watch(configPath, async (eventType) => {
 				if (eventType !== 'change') {
+					return;
+				}
+
+				if (selfWriting.has(siteId)) {
 					return;
 				}
 
@@ -138,7 +143,12 @@ export default function (context: LocalMain.AddonMainContext): void {
 			const site = siteData.getSite(siteId);
 			const wpValue = value ? 'true' : 'false';
 
-			await wpCli.run(site, ['config', 'set', constant, wpValue, '--raw', '--add', `--path=${site.path}`]);
+			selfWriting.add(siteId);
+			try {
+				await wpCli.run(site, ['config', 'set', constant, wpValue, '--raw', '--add', `--path=${site.path}`]);
+			} finally {
+				setTimeout(() => selfWriting.delete(siteId), 500);
+			}
 
 			const cached = (site as any).superchargedAddon as SuperchargedCache | undefined;
 			const updatedCache = { ...cached?.debugConstants, [constant]: value };
