@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 1.4 — [`a312b42`](../../commit/a312b4252d99048edfaacfee30294078370ee56e)
+
+- Re-architected the addon for separation of concerns and future extensibility
+- Extracted shared types, constants, and IPC channel names into `src/shared/types.ts` — single source of truth, no duplication
+- Moved pure WP-CLI and cache logic into `src/features/debug-constants/debug-constants.service.ts`
+- Encapsulated file watcher state into a factory in `src/features/debug-constants/debug-constants.watcher.ts`
+- Isolated IPC handler registration in `src/features/debug-constants/debug-constants.ipc.ts`
+- Extracted React component into `src/features/debug-constants/DebugSwitches.tsx` using a factory pattern for `context.React`
+- Extracted hook registration into `src/features/debug-constants/debug-constants.hooks.tsx`
+- Reduced entry points (`main.ts`, `renderer.tsx`) to thin wiring shells (~20 lines each)
+- Future features slot in by adding a new `src/features/<name>/` directory and one import + one call in each entry point
+
 ## Version 1.3.2.1 — [`591dec1`](../../commit/591dec1)
 
 - Added comprehensive JSDoc documentation to `main.ts` and `renderer.tsx`
