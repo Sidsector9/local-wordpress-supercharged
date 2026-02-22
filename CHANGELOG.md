@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.2 — [`f5c2e0f`](../../commit/f5c2e0fa18db0fab961fbcfb860f75c5c7b37209)
+
+- Invalidate cache when wp-config.php is modified externally (e.g. edited by hand)
+- Store a `cachedAt` timestamp alongside cached debug constants
+- On cache read, compare `cachedAt` against wp-config.php's `mtime` via a single `fs.statSync` call
+- If the file is newer than the cache, discard cache and re-fetch via WP-CLI
+
 ## Version 1.1 — [`c06f624`](../../commit/c06f6244cf56164b506d7fa382e3d9095ae3246c)
 
 - Cache debug constant values on the SiteJSON object at `superchargedAddon.debugConstants` via `siteData.updateSite()`
