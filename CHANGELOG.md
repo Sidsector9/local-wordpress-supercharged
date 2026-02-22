@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 1.3.2 — [`d86684e`](../../commit/d86684e)
+
+- Fix UI flicker (enable-disable-enable) when toggling a switch
+- Suppress `fs.watch` callback during self-initiated `wp config set` writes using a `selfWriting` guard
+- Guard is held for 500ms after the write completes to allow OS file events to flush
+
 ## Version 1.3.1 — [`d4f37ed`](../../commit/d4f37ed643b3bef1e99b7e257f0f66c3206835d8)
 
 - Disable individual switch while its WP-CLI `set` call is in flight, re-enable on completion or failure
