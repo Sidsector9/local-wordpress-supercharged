@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 1.4.1 — [`1169967`](../../commit/1169967fc6c6369ad621e20b01a1680fa064d3b8)
+
+- Undefined debug constants now show their WordPress core runtime defaults in the UI instead of `false` — notably `WP_DEBUG_DISPLAY` shows as `true` when not in wp-config.php
+- Added `WP_DEFAULTS` map to `shared/types.ts` matching wp-settings.php: `WP_DEBUG: false`, `WP_DEBUG_LOG: false`, `WP_DEBUG_DISPLAY: true`
+- `WP_DEBUG_DISPLAY` is only written to wp-config.php when explicitly set to `false`; setting it to `true` deletes it from the file, letting WordPress use its built-in default
+- Added `deleteConstant()` service function using `wp config delete` to remove constants from wp-config.php
+- Added `isConstantDefined()` service function to check whether a constant exists in wp-config.php
+- SET IPC handler now returns the full `DebugConstantsMap` so the renderer picks up all changes after a set
+- Renderer `handleToggle` consumes returned constants to update all switches after a set
+- Removed `ignoreErrors: true` from `fetchDebugConstants()` so undefined constants properly throw and fall back to `WP_DEFAULTS`
+- Added `CACHE_VERSION` to `SuperchargedCache` to invalidate stale caches from prior versions
+
 ## Version 1.4 — [`a312b42`](../../commit/a312b4252d99048edfaacfee30294078370ee56e)
 
 - Re-architected the addon for separation of concerns and future extensibility
