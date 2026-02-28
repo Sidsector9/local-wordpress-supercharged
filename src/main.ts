@@ -1,5 +1,5 @@
 /**
- * main.ts — Main Process Entry Point for the WordPress Supercharged Addon
+ * main.ts -- Main Process Entry Point for the WordPress Supercharged Addon
  *
  * This is a thin wiring shell. It extracts dependencies from Local's service
  * container and delegates to feature-specific registration functions.

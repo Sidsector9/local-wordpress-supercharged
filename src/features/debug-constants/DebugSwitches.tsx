@@ -1,5 +1,5 @@
 /**
- * DebugSwitches.tsx — React component for toggling WordPress debug constants.
+ * DebugSwitches.tsx -- React component for toggling WordPress debug constants.
  *
  * Exports a factory function (`createDebugSwitches`) that accepts a React
  * instance and returns the component. This factory pattern is necessary because
@@ -34,8 +34,8 @@ interface DebugSwitchesProps {
 /**
  * Factory that creates the DebugSwitches component bound to the given React instance.
  *
- * @param React — The React instance from Local's addon context (`context.React`).
- * @returns     — A React functional component ready to be rendered.
+ * @param React -- The React instance from Local's addon context (`context.React`).
+ * @returns     -- A React functional component ready to be rendered.
  */
 export function createDebugSwitches(React: typeof import('react')): React.FC<DebugSwitchesProps> {
 	const { useState, useEffect, useCallback } = React;

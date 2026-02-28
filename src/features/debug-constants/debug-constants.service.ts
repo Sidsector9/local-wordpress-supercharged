@@ -1,5 +1,5 @@
 /**
- * debug-constants.service.ts — Pure functions for reading and writing WordPress
+ * debug-constants.service.ts -- Pure functions for reading and writing WordPress
  * debug constants via WP-CLI, and for reading/writing the SiteJSON cache.
  *
  * All functions are stateless and take their dependencies as arguments,
@@ -20,8 +20,8 @@ import { CACHE_VERSION, DEBUG_CONSTANTS, DebugConstantName, DebugConstantsMap, S
  * typically resolves to something like:
  *   ~/Local Sites/<site-name>/app/public/
  *
- * @param site — The Local Site object.
- * @returns    — Absolute path to wp-config.php.
+ * @param site -- The Local Site object.
+ * @returns    -- Absolute path to wp-config.php.
  */
 export function getWpConfigPath(site: Local.Site): string {
 	return path.join(site.paths.webRoot, 'wp-config.php');
@@ -36,8 +36,8 @@ export function getWpConfigPath(site: Local.Site): string {
  * Uses `fs.statSync` because it's a single synchronous stat call (~0.1ms),
  * which is far cheaper than spawning three WP-CLI processes.
  *
- * @param site — The Local Site object.
- * @returns    — The file's mtimeMs, or 0 if the file doesn't exist or can't be read.
+ * @param site -- The Local Site object.
+ * @returns    -- The file's mtimeMs, or 0 if the file doesn't exist or can't be read.
  */
 export function getWpConfigMtime(site: Local.Site): number {
 	try {
@@ -53,17 +53,17 @@ export function getWpConfigMtime(site: Local.Site): number {
  *
  * WordPress stores these as PHP constants via `define()`. The WP-CLI `config get`
  * command reads the raw PHP value:
- *   - `define('WP_DEBUG', true)`  → WP-CLI returns "1"
- *   - `define('WP_DEBUG', false)` → WP-CLI returns "" (empty string)
- *   - Constant not defined        → WP-CLI throws / returns null
+ *   - `define('WP_DEBUG', true)`  -> WP-CLI returns "1"
+ *   - `define('WP_DEBUG', false)` -> WP-CLI returns "" (empty string)
+ *   - Constant not defined        -> WP-CLI throws / returns null
  *
  * Each constant is evaluated as a boolean:
- *   - "1" or "true" (case-insensitive) → true
- *   - Anything else (empty, null, error) → false
+ *   - "1" or "true" (case-insensitive) -> true
+ *   - Anything else (empty, null, error) -> false
  *
- * @param wpCli — The WpCli service instance from Local's service container.
- * @param site  — The Local Site object.
- * @returns     — A DebugConstantsMap mapping each constant name to its boolean value.
+ * @param wpCli -- The WpCli service instance from Local's service container.
+ * @param site  -- The Local Site object.
+ * @returns     -- A DebugConstantsMap mapping each constant name to its boolean value.
  */
 export async function fetchDebugConstants(
 	wpCli: LocalMain.Services.WpCli,
@@ -90,10 +90,10 @@ export async function fetchDebugConstants(
  *   - `--raw` writes the value as a raw PHP expression (true/false without quotes).
  *   - `--add` creates the constant if it doesn't already exist.
  *
- * @param wpCli    — The WpCli service instance.
- * @param site     — The Local Site object.
- * @param constant — The constant name (e.g. "WP_DEBUG").
- * @param value    — The new boolean value to set.
+ * @param wpCli    -- The WpCli service instance.
+ * @param site     -- The Local Site object.
+ * @param constant -- The constant name (e.g. "WP_DEBUG").
+ * @param value    -- The new boolean value to set.
  */
 export async function setDebugConstant(
 	wpCli: LocalMain.Services.WpCli,
@@ -112,10 +112,10 @@ export async function setDebugConstant(
  * exists, WP-CLI succeeds and this returns true. If the constant is not
  * defined, WP-CLI throws and this returns false.
  *
- * @param wpCli    — The WpCli service instance.
- * @param site     — The Local Site object.
- * @param constant — The constant name to check.
- * @returns        — true if the constant exists in wp-config.php, false otherwise.
+ * @param wpCli    -- The WpCli service instance.
+ * @param site     -- The Local Site object.
+ * @param constant -- The constant name to check.
+ * @returns        -- true if the constant exists in wp-config.php, false otherwise.
  */
 export async function isConstantDefined(
 	wpCli: LocalMain.Services.WpCli,
@@ -138,9 +138,9 @@ export async function isConstantDefined(
  * Used when a constant should revert to its WordPress core runtime default
  * (e.g. removing WP_DEBUG_DISPLAY so WP uses its default of true).
  *
- * @param wpCli    — The WpCli service instance.
- * @param site     — The Local Site object.
- * @param constant — The constant name to delete.
+ * @param wpCli    -- The WpCli service instance.
+ * @param site     -- The Local Site object.
+ * @param constant -- The constant name to delete.
  */
 export async function deleteConstant(
 	wpCli: LocalMain.Services.WpCli,
@@ -156,8 +156,8 @@ export async function deleteConstant(
  * The `superchargedAddon` property is a custom field written by this addon;
  * it doesn't exist in the official SiteJSON type, hence the `as any` cast.
  *
- * @param site — The Local Site object.
- * @returns    — The cached data, or undefined if no cache exists.
+ * @param site -- The Local Site object.
+ * @returns    -- The cached data, or undefined if no cache exists.
  */
 export function readCache(site: Local.Site): SuperchargedCache | undefined {
 	return (site as any).superchargedAddon as SuperchargedCache | undefined;
@@ -171,9 +171,9 @@ export function readCache(site: Local.Site): SuperchargedCache | undefined {
  * The `cachedAt` timestamp is set to `Date.now()` so that future reads can
  * compare it against wp-config.php's mtime for staleness detection.
  *
- * @param siteData — The SiteDataService instance from Local's service container.
- * @param siteId   — The unique identifier of the site to update.
- * @param cache    — The debug constant values to persist.
+ * @param siteData -- The SiteDataService instance from Local's service container.
+ * @param siteId   -- The unique identifier of the site to update.
+ * @param cache    -- The debug constant values to persist.
  */
 export function writeCache(
 	siteData: LocalMain.Services.SiteDataService,

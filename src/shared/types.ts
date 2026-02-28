@@ -1,5 +1,5 @@
 /**
- * shared/types.ts — Types, constants, and IPC channel names shared between
+ * shared/types.ts -- Types, constants, and IPC channel names shared between
  * the main and renderer processes.
  *
  * This module is the single source of truth for data shapes and identifiers
@@ -35,11 +35,11 @@ export const CACHE_VERSION = 3;
  * The shape of the data persisted on the SiteJSON object under the
  * `superchargedAddon` key via `siteData.updateSite()`.
  *
- * @property debugConstants — The cached boolean values for each debug constant.
- * @property cachedAt       — Unix timestamp (ms) of when the cache was last written.
+ * @property debugConstants -- The cached boolean values for each debug constant.
+ * @property cachedAt       -- Unix timestamp (ms) of when the cache was last written.
  *                            Compared against wp-config.php's mtime to detect
  *                            external modifications and invalidate stale caches.
- * @property cacheVersion   — Format version. Caches missing this field or with
+ * @property cacheVersion   -- Format version. Caches missing this field or with
  *                            an older version are invalidated on read.
  */
 export interface SuperchargedCache {

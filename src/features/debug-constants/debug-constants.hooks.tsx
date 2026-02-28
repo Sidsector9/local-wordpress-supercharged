@@ -1,5 +1,5 @@
 /**
- * debug-constants.hooks.ts — Renderer-process hook registrations for the
+ * debug-constants.hooks.ts -- Renderer-process hook registrations for the
  * debug constants feature.
  *
  * Registers the DebugSwitches component on the SiteInfoOverview_TableList
@@ -12,8 +12,8 @@ import { createDebugSwitches } from './DebugSwitches';
 /**
  * Registers all renderer-side hooks for the debug constants feature.
  *
- * @param React — The React instance from Local's addon context.
- * @param hooks — The HooksRenderer class from Local's addon context.
+ * @param React -- The React instance from Local's addon context.
+ * @param hooks -- The HooksRenderer class from Local's addon context.
  */
 export function registerDebugConstantsHooks(
 	React: typeof import('react'),

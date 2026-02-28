@@ -1,5 +1,5 @@
 /**
- * debug-constants.watcher.ts — File watcher lifecycle for wp-config.php.
+ * debug-constants.watcher.ts -- File watcher lifecycle for wp-config.php.
  *
  * Encapsulates the `fs.watch` watchers (one per site) and the `selfWriting`
  * guard that suppresses the watcher during addon-initiated writes.
@@ -44,8 +44,8 @@ export interface WatcherManager {
  *   2. Updates the cache on the SiteJSON object.
  *   3. Pushes the new values to the renderer via `sendIPCEvent`.
  *
- * @param deps — The service dependencies (wpCli, siteData, logger).
- * @returns    — A WatcherManager with watch/unwatch/selfWriting methods.
+ * @param deps -- The service dependencies (wpCli, siteData, logger).
+ * @returns    -- A WatcherManager with watch/unwatch/selfWriting methods.
  */
 export function createWatcherManager(deps: WatcherDeps): WatcherManager {
 	const { wpCli, siteData, logger } = deps;

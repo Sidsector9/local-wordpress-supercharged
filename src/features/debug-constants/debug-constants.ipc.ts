@@ -1,5 +1,5 @@
 /**
- * debug-constants.ipc.ts — IPC handler registration for the debug constants feature.
+ * debug-constants.ipc.ts -- IPC handler registration for the debug constants feature.
  *
  * This is the "wiring" layer that connects the service functions and watcher
  * to IPC channels. It registers all four async IPC listeners that the renderer
@@ -38,7 +38,7 @@ export interface IpcDeps {
  *   - supercharged:get-debug-constants
  *   - supercharged:set-debug-constant
  *
- * @param deps — The service dependencies (wpCli, siteData, logger).
+ * @param deps -- The service dependencies (wpCli, siteData, logger).
  */
 export function registerDebugConstantsIpc(deps: IpcDeps): void {
 	const { wpCli, siteData, logger } = deps;
@@ -70,8 +70,8 @@ export function registerDebugConstantsIpc(deps: IpcDeps): void {
 	 * Get the current values of all debug constants.
 	 *
 	 * Implements a cache-first strategy:
-	 * 1. If cached and wp-config.php hasn't been modified since → return cached.
-	 * 2. Otherwise → fetch via WP-CLI, persist to cache, return fresh values.
+	 * 1. If cached and wp-config.php hasn't been modified since -> return cached.
+	 * 2. Otherwise -> fetch via WP-CLI, persist to cache, return fresh values.
 	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_DEBUG_CONSTANTS,
@@ -96,8 +96,8 @@ export function registerDebugConstantsIpc(deps: IpcDeps): void {
 	 * Set a single debug constant in wp-config.php.
 	 *
 	 * Special handling for WP_DEBUG_DISPLAY:
-	 *   - Setting to false → writes to file (overrides the WP default of true).
-	 *   - Setting to true → deletes from file if present, letting WP use its default.
+	 *   - Setting to false -> writes to file (overrides the WP default of true).
+	 *   - Setting to true -> deletes from file if present, letting WP use its default.
 	 *
 	 * Flow:
 	 * 1. Mark self-writing to suppress the file watcher.
