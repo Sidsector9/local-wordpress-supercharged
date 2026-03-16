@@ -1,42 +1,34 @@
 # Local WordPress Supercharged
 
-A [Local by Flywheel](https://localwp.com/) addon that gives you instant control over WordPress debug constants directly from the Site Overview page.
+A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- toggle debug constants, start ngrok tunnels, and more, all from the Site Overview page.
 
 ## Features
 
-### Toggle Debug Constants from the UI
+### One-Click ngrok Tunnels
 
-Three toggle switches are injected into the **Site Info Overview** page, letting you enable or disable WordPress debug constants without ever touching `wp-config.php` by hand:
+Expose your local WordPress site to the internet in one click. Paste your ngrok URL, hit Start, and you're live.
 
-- **WP_DEBUG** — Enables WordPress debug mode
-- **WP_DEBUG_LOG** — Writes debug output to `wp-content/debug.log`
-- **WP_DEBUG_DISPLAY** — Shows/hides errors on the front end
+![ngrok tunnel demo](gifs/ngrok.gif)
 
-Each switch uses WP-CLI under the hood (`wp config get` / `wp config set --raw --add`) to read and write the constants.
+- **One button** -- Start enables `WP_HOME`/`WP_SITEURL` and launches the tunnel. Stop reverses everything.
+- **Live status indicator** -- see at a glance if your tunnel is active
+- **Collision detection** -- handles multiple sites sharing the same ngrok URL gracefully
+- **Auto-cleanup** -- tunnels are killed automatically when a site is stopped
+- **Inline error reporting** -- ngrok errors surface directly in the UI
 
-### Smart Caching
+### Toggle Debug Constants
 
-Constant values are cached on the SiteJSON object, so switching between sites is instant — no WP-CLI calls needed. The cache is:
+Toggle `WP_DEBUG`, `WP_DEBUG_LOG`, and `WP_DEBUG_DISPLAY` from the Site Overview page. No more editing `wp-config.php` by hand.
 
-- **Written** after every fetch and every toggle
-- **Invalidated automatically** by comparing the cache timestamp against `wp-config.php`'s file modification time (`mtime`)
-- A single `fs.statSync` call (~0.1ms) determines freshness — three WP-CLI spawns are only triggered on cache miss
+![debug constants demo](gifs/debug-constants.gif)
 
-### Live File Watching
-
-If you edit `wp-config.php` directly (in a text editor, via SSH, or with another tool), the addon detects the change in real time and updates the switches automatically:
-
-- Uses `fs.watch` (OS-level file system events) — not polling
-- Watcher lifecycle is tied to the component: starts when you view a site, stops when you navigate away
-- A self-writing guard prevents the watcher from firing during addon-initiated writes, eliminating UI flicker
-
-### Optimistic UI with Rollback
-
-When you toggle a switch, the UI updates immediately (optimistic update). If the WP-CLI call fails, the switch reverts to its previous state. Each switch is independently disabled while its write is in flight, so you can toggle multiple constants without waiting.
+- **Instant switching** -- cached values mean zero delay when switching between sites
+- **Live sync** -- edit `wp-config.php` externally and the UI updates in real time
+- **Optimistic UI** -- switches update immediately, roll back on failure
 
 ## Installation
 
-Clone the repository into the Local addons directory for your platform:
+Clone into the Local addons directory:
 
 - **macOS**: `~/Library/Application Support/Local/addons`
 - **Windows**: `C:\Users\username\AppData\Roaming\Local\addons`
@@ -53,36 +45,25 @@ Open Local and enable the addon.
 
 ## Development
 
+```bash
+yarn build        # Compile TypeScript
+yarn watch        # Compile in watch mode
+yarn test         # Run tests
+```
+
 ### Project Structure
 
 ```
 src/
-  main.ts                                      # Main process entry point (thin shell)
-  renderer.tsx                                  # Renderer process entry point (thin shell)
-  shared/
-    types.ts                                    # Shared types, constants, IPC channel names
+  main.ts              # Main process entry point
+  renderer.tsx          # Renderer process entry point
+  shared/types.ts       # Shared types, constants, IPC channels
   features/
-    debug-constants/
-      debug-constants.service.ts                # WP-CLI fetch/set, cache read/write
-      debug-constants.watcher.ts                # fs.watch lifecycle, self-writing guard
-      debug-constants.ipc.ts                    # IPC handler registration
-      DebugSwitches.tsx                         # React component (factory pattern)
-      debug-constants.hooks.tsx                 # Renderer hook registration
+    debug-constants/    # WP_DEBUG toggle feature
+    ngrok/              # ngrok tunnel feature
 ```
 
-The codebase is organized by feature. Each feature is self-contained under `src/features/`. Adding a new feature means creating a new directory and adding one import + one call in each entry point.
-
-### Build
-
-```bash
-yarn build        # Compile TypeScript to lib/
-yarn watch        # Compile in watch mode
-```
-
-### External Libraries
-
-- **@getflywheel/local** — Type definitions for Local's addon API
-- **@getflywheel/local-components** — React component library (Switch, TableListRow, etc.)
+Each feature is self-contained under `src/features/`.
 
 ## License
 
