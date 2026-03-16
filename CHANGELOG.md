@@ -1,8 +1,37 @@
 # Changelog
 
-## Version 1.4.1 — [`1169967`](../../commit/1169967fc6c6369ad621e20b01a1680fa064d3b8)
+## Version 1.5 -- [`080ed82`](../../commit/080ed8287ee2bfd36e769023c12b3b6f28a6ad9d)
 
-- Undefined debug constants now show their WordPress core runtime defaults in the UI instead of `false` — notably `WP_DEBUG_DISPLAY` shows as `true` when not in wp-config.php
+### ngrok URL override feature ([`779fafb`](../../commit/779fafb8bc17064ba1658ea360064737b4965ba0))
+
+- Added ngrok feature to override WP_HOME and WP_SITEURL with an ngrok tunnel URL
+- New `ngrok` row on the Site Info Overview page with URL input, Save, and Clear buttons
+- Save persists the ngrok URL to SiteJSON cache without touching wp-config.php
+- Enable/disable writes or removes `WP_HOME` and `WP_SITEURL` constants via WP-CLI
+- URL collision detection -- enabling an ngrok URL on one site automatically disables it on any other site using the same URL, removes their wp-config.php constants, and notifies the renderer
+- Clear removes the URL mapping and wp-config.php constants in one step
+- Added `ngrok.service.ts` with `setNgrokConstants`, `removeNgrokConstants`, `readNgrokCache`, `writeNgrokCache`, `clearNgrokCache`, `findConflictingSites`
+- Added `NgrokCache` type and `NGROK_CONSTANTS` tuple to `shared/types.ts`
+- Added 5 IPC channels: `GET_NGROK`, `APPLY_NGROK`, `ENABLE_NGROK`, `CLEAR_NGROK`, `NGROK_CHANGED`
+- Fixed `debug-constants.service.ts` `writeCache` to preserve existing `superchargedAddon` fields when writing debug constants
+
+### Start/Stop tunnel from the UI ([`da295a6`](../../commit/da295a6b10ee80a7d86a18092135c0646df43e12), [`e0ed0d7`](../../commit/e0ed0d74c262132ec7f320172385bbe3ab08a54b), [`080ed82`](../../commit/080ed8287ee2bfd36e769023c12b3b6f28a6ad9d))
+
+- Added Start/Stop button to spawn and kill the `ngrok` CLI tunnel process directly from the UI
+- Merged the Enable/Disable switch and Start/Stop button into a single Start/Stop button -- clicking Start sets WP_HOME/WP_SITEURL constants and starts the tunnel in one step, Stop does the reverse
+- Before starting a tunnel, checks the ngrok agent API (`127.0.0.1:4040/api/tunnels`) and deletes any existing tunnel for the same domain to avoid "endpoint already online" errors
+- Added tunnel status indicator (green/gray dot with "Tunnel active"/"Tunnel inactive" label) driven by the ngrok agent API
+- Status indicator correctly handles shared ngrok URLs across sites -- only the site with ngrok enabled shows "Tunnel active"
+- Error messages from ngrok (auth failures, missing binary, non-zero exits) are captured from stderr and displayed inline in the UI
+- Resolved ngrok binary path for Electron by shelling out to the user's login shell (`$SHELL -l -c 'which ngrok'` on macOS/Linux, `where ngrok` on Windows), with fallbacks to common install paths
+- When a Local site is stopped, its ngrok tunnel is automatically killed and the cache is updated to `enabled: false`
+- Added `ngrok.process.ts` with `startNgrokProcess`, `stopNgrokProcess`, `getNgrokProcessStatus`, `fetchNgrokTunnels`, `findTunnelByDomain`, `deleteTunnel`, `extractDomain`, and `resolveNgrokBin`
+- Added 4 new IPC channels: `START_NGROK_PROCESS`, `STOP_NGROK_PROCESS`, `GET_NGROK_PROCESS_STATUS`, `NGROK_PROCESS_STATUS_CHANGED`
+- Added `siteStopped` hook in `main.ts` to clean up tunnels when sites are stopped
+
+## Version 1.4.1 -- [`1169967`](../../commit/1169967fc6c6369ad621e20b01a1680fa064d3b8)
+
+- Undefined debug constants now show their WordPress core runtime defaults in the UI instead of `false` -- notably `WP_DEBUG_DISPLAY` shows as `true` when not in wp-config.php
 - Added `WP_DEFAULTS` map to `shared/types.ts` matching wp-settings.php: `WP_DEBUG: false`, `WP_DEBUG_LOG: false`, `WP_DEBUG_DISPLAY: true`
 - `WP_DEBUG_DISPLAY` is only written to wp-config.php when explicitly set to `false`; setting it to `true` deletes it from the file, letting WordPress use its built-in default
 - Added `deleteConstant()` service function using `wp config delete` to remove constants from wp-config.php
@@ -12,10 +41,10 @@
 - Removed `ignoreErrors: true` from `fetchDebugConstants()` so undefined constants properly throw and fall back to `WP_DEFAULTS`
 - Added `CACHE_VERSION` to `SuperchargedCache` to invalidate stale caches from prior versions
 
-## Version 1.4 — [`a312b42`](../../commit/a312b4252d99048edfaacfee30294078370ee56e)
+## Version 1.4 -- [`a312b42`](../../commit/a312b4252d99048edfaacfee30294078370ee56e)
 
 - Re-architected the addon for separation of concerns and future extensibility
-- Extracted shared types, constants, and IPC channel names into `src/shared/types.ts` — single source of truth, no duplication
+- Extracted shared types, constants, and IPC channel names into `src/shared/types.ts` --single source of truth, no duplication
 - Moved pure WP-CLI and cache logic into `src/features/debug-constants/debug-constants.service.ts`
 - Encapsulated file watcher state into a factory in `src/features/debug-constants/debug-constants.watcher.ts`
 - Isolated IPC handler registration in `src/features/debug-constants/debug-constants.ipc.ts`
@@ -24,45 +53,45 @@
 - Reduced entry points (`main.ts`, `renderer.tsx`) to thin wiring shells (~20 lines each)
 - Future features slot in by adding a new `src/features/<name>/` directory and one import + one call in each entry point
 
-## Version 1.3.2.1 — [`591dec1`](../../commit/591dec1)
+## Version 1.3.2.1 -- [`591dec1`](../../commit/591dec1)
 
 - Added comprehensive JSDoc documentation to `main.ts` and `renderer.tsx`
 - Documented file-level overviews, all types/interfaces, helper functions, IPC channels, component lifecycle, and inline logic
 
-## Version 1.3.2 — [`d86684e`](../../commit/d86684e)
+## Version 1.3.2 -- [`d86684e`](../../commit/d86684e)
 
 - Fix UI flicker (enable-disable-enable) when toggling a switch
 - Suppress `fs.watch` callback during self-initiated `wp config set` writes using a `selfWriting` guard
 - Guard is held for 500ms after the write completes to allow OS file events to flush
 
-## Version 1.3.1 — [`d4f37ed`](../../commit/d4f37ed643b3bef1e99b7e257f0f66c3206835d8)
+## Version 1.3.1 -- [`d4f37ed`](../../commit/d4f37ed643b3bef1e99b7e257f0f66c3206835d8)
 
 - Disable individual switch while its WP-CLI `set` call is in flight, re-enable on completion or failure
 - Per-constant `updating` state so toggling one switch doesn't block the others
 
-## Version 1.3 — [`91b446b`](../../commit/91b446b72bcbe007d6c92d2e36d8e0bd6fc8bf2d)
+## Version 1.3 -- [`91b446b`](../../commit/91b446b72bcbe007d6c92d2e36d8e0bd6fc8bf2d)
 
 - Auto-update UI when wp-config.php is modified externally (e.g. edited by hand in a text editor)
 - Main process uses `fs.watch` to observe wp-config.php per site, managed via `supercharged:watch-site` / `supercharged:unwatch-site` IPC calls
 - On file change, re-fetches constants via WP-CLI, updates cache, and pushes new values to the renderer via `sendIPCEvent`
 - Renderer listens for `supercharged:debug-constants-changed` on `ipcRenderer` and updates switch states in real time
-- Watcher lifecycle tied to component mount/unmount — starts when viewing a site, stops when navigating away
+- Watcher lifecycle tied to component mount/unmount --starts when viewing a site, stops when navigating away
 
-## Version 1.2 — [`f5c2e0f`](../../commit/f5c2e0fa18db0fab961fbcfb860f75c5c7b37209)
+## Version 1.2 -- [`f5c2e0f`](../../commit/f5c2e0fa18db0fab961fbcfb860f75c5c7b37209)
 
 - Invalidate cache when wp-config.php is modified externally (e.g. edited by hand)
 - Store a `cachedAt` timestamp alongside cached debug constants
 - On cache read, compare `cachedAt` against wp-config.php's `mtime` via a single `fs.statSync` call
 - If the file is newer than the cache, discard cache and re-fetch via WP-CLI
 
-## Version 1.1 — [`c06f624`](../../commit/c06f6244cf56164b506d7fa382e3d9095ae3246c)
+## Version 1.1 -- [`c06f624`](../../commit/c06f6244cf56164b506d7fa382e3d9095ae3246c)
 
 - Cache debug constant values on the SiteJSON object at `superchargedAddon.debugConstants` via `siteData.updateSite()`
 - On site switch, return cached values instantly without running WP-CLI commands
 - On first load (no cache), fetch via WP-CLI and persist to cache
 - On toggle, update the cache alongside the `wp config set` call so subsequent visits are instant
 
-## Version 1 — [`f946962`](../../commit/f94696256ec95ab47c71d2f381d5107f348f84d5)
+## Version 1 -- [`f946962`](../../commit/f94696256ec95ab47c71d2f381d5107f348f84d5)
 
 - Added 3 toggle switches (WP_DEBUG, WP_DEBUG_LOG, WP_DEBUG_DISPLAY) to the Site Info Overview page via the `SiteInfoOverview_TableList` content hook
 - Each switch is wrapped in a `TableListRow` with the constant name as its label
