@@ -25,7 +25,7 @@
     "prepare": "tsc",
     "watch": "yarn run build --watch",
     "lint": "eslint .",
-    "test": "yarn jest src/**/*.test.ts",
+    "test": "yarn jest",
     "test:watch": "yarn test --watch"
   },
   "devDependencies": {
