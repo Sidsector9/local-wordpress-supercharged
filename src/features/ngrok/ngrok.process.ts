@@ -1,9 +1,10 @@
 /**
  * ngrok.process.ts -- Manages ngrok CLI child processes.
  *
- * Tracks running processes in a module-level Map keyed by siteId.
- * Uses child_process.spawn (not Local's Process class) because ngrok
- * is a standalone CLI tool that should not auto-restart.
+ * Only one ngrok URL should run at a time. Before starting a tunnel,
+ * we check the ngrok agent API (127.0.0.1:4040) and stop any existing
+ * tunnel for that domain. Status checks also use the API so the UI
+ * reflects reality when switching between sites.
  */
 
 import * as path from 'path';
@@ -14,15 +15,6 @@ const processes = new Map<string, ChildProcess>();
 
 const isWindows = process.platform === 'win32';
 
-/**
- * Resolves the full path to the ngrok binary. Electron doesn't inherit the
- * user's shell PATH, so a bare `ngrok` would fail with ENOENT. We shell out
- * to the platform's shell once, cache the result, and use the absolute path
- * for all subsequent spawns.
- *
- * - macOS/Linux: runs `$SHELL -l -c 'which ngrok'`, falls back to common paths
- * - Windows: runs `where ngrok` via cmd.exe, falls back to %LOCALAPPDATA%\ngrok
- */
 let resolvedNgrokPath: string | null = null;
 
 export function resolveNgrokBin(): string {
@@ -51,13 +43,7 @@ function resolveNgrokUnix(): string {
 		// fall through
 	}
 
-	const candidates = [
-		'/opt/homebrew/bin/ngrok',
-		'/usr/local/bin/ngrok',
-		'/snap/bin/ngrok',
-	];
-
-	for (const candidate of candidates) {
+	for (const candidate of ['/opt/homebrew/bin/ngrok', '/usr/local/bin/ngrok', '/snap/bin/ngrok']) {
 		try {
 			execFileSync(candidate, ['version'], { encoding: 'utf8', timeout: 3000 });
 			return candidate;
@@ -77,14 +63,12 @@ function resolveNgrokWindows(): string {
 			encoding: 'utf8',
 			timeout: 5000,
 		}).trim();
-		// `where` can return multiple lines; take the first
 		return result.split(/\r?\n/)[0];
 	} catch {
 		// fall through
 	}
 
 	const candidates: string[] = [];
-
 	if (process.env.LOCALAPPDATA) {
 		candidates.push(path.join(process.env.LOCALAPPDATA, 'ngrok', 'ngrok.exe'));
 	}
@@ -109,7 +93,6 @@ function resolveNgrokWindows(): string {
 
 /**
  * Strips protocol and trailing slash from a URL to extract the bare domain.
- * e.g. "https://foo.ngrok-free.dev/" -> "foo.ngrok-free.dev"
  */
 export function extractDomain(url: string): string {
 	return url.replace(/^https?:\/\//, '').replace(/\/+$/, '');
@@ -126,7 +109,7 @@ export interface NgrokTunnel {
 
 /**
  * Queries the ngrok agent API for active tunnels.
- * Returns an empty array if the agent is not running (connection refused).
+ * Returns an empty array if the agent is not running.
  */
 export function fetchNgrokTunnels(): Promise<NgrokTunnel[]> {
 	return new Promise((resolve) => {
@@ -149,27 +132,15 @@ export function fetchNgrokTunnels(): Promise<NgrokTunnel[]> {
 
 /**
  * Finds a tunnel by its public domain in the ngrok agent API.
- * Returns the tunnel object if found, undefined otherwise.
  */
 export async function findTunnelByDomain(ngrokUrl: string): Promise<NgrokTunnel | undefined> {
 	const domain = extractDomain(ngrokUrl);
 	const tunnels = await fetchNgrokTunnels();
-
 	return tunnels.find((t) => extractDomain(t.public_url || '') === domain);
 }
 
 /**
- * Normalizes a backend address for comparison.
- * The ngrok API returns config.addr as "http://host:port" or "host:port".
- * We strip the protocol to get a bare "host:port" string.
- */
-export function normalizeAddr(addr: string): string {
-	return addr.replace(/^https?:\/\//, '');
-}
-
-/**
  * Deletes a tunnel by name via the ngrok agent API.
- * Resolves on success or if the tunnel doesn't exist. Rejects on error.
  */
 export function deleteTunnel(tunnelName: string): Promise<void> {
 	return new Promise((resolve, reject) => {
@@ -181,7 +152,6 @@ export function deleteTunnel(tunnelName: string): Promise<void> {
 			method: 'DELETE',
 			timeout: 5000,
 		}, (res) => {
-			// 204 = deleted, 404 = already gone -- both fine
 			if (res.statusCode === 204 || res.statusCode === 404) {
 				resolve();
 			} else {
@@ -196,18 +166,11 @@ export function deleteTunnel(tunnelName: string): Promise<void> {
 }
 
 /**
- * Spawns `ngrok http --domain=<domain> <siteDomain>:<httpPort>`.
- * Stores the ChildProcess in the Map. Calls onExit when the process exits.
+ * Starts an ngrok tunnel for a site.
  *
- * Before spawning, checks the ngrok agent API:
- * - If a tunnel with the same domain AND same backend target exists,
- *   skips spawning and returns 'already-running'.
- * - If a tunnel with the same domain but a different backend exists
- *   (e.g. left over from another site), deletes it first via the API.
- *
- * stderr is captured so that error messages can be surfaced to the user.
- *
- * If a process is already running for this siteId, it is killed first.
+ * 1. Check the agent API -- if this domain is already running, stop it.
+ * 2. Kill any tracked process for this siteId.
+ * 3. Spawn `ngrok http --domain=<domain> <target>`.
  */
 export async function startNgrokProcess(
 	siteId: string,
@@ -215,25 +178,19 @@ export async function startNgrokProcess(
 	siteDomain: string,
 	httpPort: number,
 	onExit: (siteId: string, error?: string) => void,
-): Promise<'started' | 'already-running'> {
+): Promise<void> {
+	const domain = extractDomain(ngrokUrl);
 	const target = `${siteDomain}:${httpPort}`;
+
+	// If this domain is already tunneled, stop it first
 	const existing = await findTunnelByDomain(ngrokUrl);
-
 	if (existing) {
-		const existingAddr = normalizeAddr(existing.config?.addr || '');
-		if (existingAddr === target) {
-			return 'already-running';
-		}
-
-		// Tunnel exists but points to a different backend -- tear it down
 		await deleteTunnel(existing.name);
 	}
 
 	if (processes.has(siteId)) {
 		stopNgrokProcess(siteId);
 	}
-
-	const domain = extractDomain(ngrokUrl);
 
 	const ngrokBin = resolveNgrokBin();
 	const child = spawn(ngrokBin, ['http', `--domain=${domain}`, target], {
@@ -273,8 +230,6 @@ export async function startNgrokProcess(
 
 	child.on('exit', (code) => cleanup(code));
 	child.on('error', (err) => cleanup(err));
-
-	return 'started';
 }
 
 /**
@@ -301,34 +256,18 @@ export function isNgrokProcessRunning(siteId: string): boolean {
 }
 
 /**
- * Checks whether a tunnel for the given ngrok URL is active, using
- * both the in-memory Map and the ngrok agent API.
+ * Checks whether a tunnel for the given ngrok URL is active
+ * by querying the ngrok agent API.
  *
- * When target is provided, the API check also verifies that the tunnel's
- * backend address matches (so a tunnel pointing to a different site is
- * not reported as "running" for this site).
+ * Only reports 'running' when the site has ngrok enabled AND
+ * the tunnel domain is found in the API. This way, if two sites
+ * share the same URL, only the enabled one shows as active.
  */
-export async function getNgrokProcessStatus(
-	siteId: string,
-	ngrokUrl?: string,
-	target?: string,
-): Promise<'running' | 'stopped'> {
-	if (processes.has(siteId)) {
-		return 'running';
+export async function getNgrokProcessStatus(ngrokUrl?: string, enabled?: boolean): Promise<'running' | 'stopped'> {
+	if (!ngrokUrl || !enabled) {
+		return 'stopped';
 	}
 
-	if (ngrokUrl) {
-		const tunnel = await findTunnelByDomain(ngrokUrl);
-		if (tunnel) {
-			if (!target) {
-				return 'running';
-			}
-			const tunnelAddr = normalizeAddr(tunnel.config?.addr || '');
-			if (tunnelAddr === target) {
-				return 'running';
-			}
-		}
-	}
-
-	return 'stopped';
+	const tunnel = await findTunnelByDomain(ngrokUrl);
+	return tunnel ? 'running' : 'stopped';
 }

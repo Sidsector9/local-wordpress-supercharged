@@ -1,15 +1,16 @@
 /**
- * NgrokRow.tsx -- React component for toggling ngrok URL overrides.
+ * NgrokRow.tsx -- React component for managing ngrok tunnels.
  *
- * Renders a TableListRow with: Switch, URL input, Apply button, Clear button.
- * URL is only persisted when the user explicitly clicks Apply.
- * No blur handlers, no cleanup persistence.
+ * Renders a TableListRow with: URL input, Save button, Clear button,
+ * Start/Stop button, and a status indicator.
+ *
+ * Start enables wp-config.php constants AND spawns the ngrok tunnel.
+ * Stop kills the tunnel AND removes the constants.
  */
 
 import * as LocalRenderer from '@getflywheel/local/renderer';
 import { ipcRenderer } from 'electron';
 import { TableListRow } from '@getflywheel/local-components';
-import { Switch } from '@getflywheel/local-components';
 import { TextButtonExternal } from '@getflywheel/local-components';
 import { IPC_CHANNELS } from '../../shared/types';
 
@@ -84,32 +85,6 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 			};
 		}, [site.id]);
 
-		const handleToggle = useCallback(
-			async (_name: string, checked: boolean) => {
-				if (!savedUrl.trim()) {
-					return;
-				}
-
-				const previousEnabled = enabled;
-				setEnabled(checked);
-				setUpdating(true);
-
-				try {
-					await LocalRenderer.ipcAsync(
-						IPC_CHANNELS.ENABLE_NGROK,
-						site.id,
-						checked,
-						savedUrl.trim(),
-					);
-				} catch (e) {
-					setEnabled(previousEnabled);
-				} finally {
-					setUpdating(false);
-				}
-			},
-			[site.id, enabled, savedUrl],
-		);
-
 		const handleUrlChange = useCallback(
 			(event: any) => {
 				setUrl(event.target.value);
@@ -157,21 +132,29 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 
 		const handleStartStop = useCallback(
 			async () => {
+				if (!savedUrl.trim()) {
+					return;
+				}
+
 				setUpdating(true);
 				setError('');
 				try {
-					if (processStatus === 'running') {
+					if (enabled) {
 						await LocalRenderer.ipcAsync(IPC_CHANNELS.STOP_NGROK_PROCESS, site.id);
+						await LocalRenderer.ipcAsync(IPC_CHANNELS.ENABLE_NGROK, site.id, false, savedUrl.trim());
+						setEnabled(false);
 					} else {
+						await LocalRenderer.ipcAsync(IPC_CHANNELS.ENABLE_NGROK, site.id, true, savedUrl.trim());
+						setEnabled(true);
 						await LocalRenderer.ipcAsync(IPC_CHANNELS.START_NGROK_PROCESS, site.id);
 					}
 				} catch (e: any) {
-					setError(e?.message || 'Failed to start ngrok process');
+					setError(e?.message || 'Failed to toggle ngrok');
 				} finally {
 					setUpdating(false);
 				}
 			},
-			[site.id, processStatus],
+			[site.id, enabled, savedUrl],
 		);
 
 		if (loading) {
@@ -179,18 +162,11 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 		}
 
 		const urlDirty = url.trim() !== savedUrl;
+		const isRunning = processStatus === 'running';
 
 		return (
 			<TableListRow label="ngrok" alignMiddle>
 				<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-					<Switch
-						tiny={true}
-						flat={true}
-						disabled={updating || !savedUrl.trim()}
-						checked={enabled}
-						onChange={handleToggle}
-						name="ngrok-toggle"
-					/>
 					<input
 						type="text"
 						placeholder="Enter the ngrok URL"
@@ -226,11 +202,11 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 					</TextButtonExternal>
 					<TextButtonExternal
 						onClick={handleStartStop}
-						disabled={updating || !enabled || !savedUrl}
+						disabled={updating || !savedUrl.trim()}
 					>
-						{processStatus === 'running' ? 'Stop' : 'Start'}
+						{enabled ? 'Stop' : 'Start'}
 					</TextButtonExternal>
-					{enabled && savedUrl && (
+					{savedUrl && (
 						<span style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -243,9 +219,9 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 								width: '8px',
 								height: '8px',
 								borderRadius: '50%',
-								backgroundColor: processStatus === 'running' ? '#51bb7b' : '#9b9b9b',
+								backgroundColor: isRunning ? '#51bb7b' : '#9b9b9b',
 							}} />
-							{processStatus === 'running' ? 'Tunnel active' : 'Tunnel inactive'}
+							{isRunning ? 'Tunnel active' : 'Tunnel inactive'}
 						</span>
 					)}
 				</div>
