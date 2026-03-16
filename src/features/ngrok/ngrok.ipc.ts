@@ -1,14 +1,18 @@
 /**
  * ngrok.ipc.ts -- IPC handler registration for the ngrok feature.
  *
+ * This is the "wiring" layer that connects the service functions, process
+ * manager, and IPC channels. It registers all seven async IPC listeners
+ * that the renderer communicates with.
+ *
  * Channels:
- *   - GET_NGROK: read cached state
- *   - APPLY_NGROK: save URL to mapping (no wp-config.php changes)
- *   - ENABLE_NGROK: enable/disable the feature (writes/removes wp-config.php constants)
- *   - CLEAR_NGROK: clear URL and remove mapping
- *   - START_NGROK_PROCESS: spawn the ngrok CLI for a site
- *   - STOP_NGROK_PROCESS: kill the ngrok CLI for a site
- *   - GET_NGROK_PROCESS_STATUS: return 'running' or 'stopped'
+ *   - GET_NGROK:              Read cached ngrok state (enabled + URL)
+ *   - APPLY_NGROK:            Save URL to cache (no wp-config.php changes)
+ *   - ENABLE_NGROK:           Enable/disable (writes/removes wp-config.php constants)
+ *   - CLEAR_NGROK:            Clear URL mapping and remove constants
+ *   - START_NGROK_PROCESS:    Spawn the ngrok CLI for a site
+ *   - STOP_NGROK_PROCESS:     Kill the ngrok CLI for a site
+ *   - GET_NGROK_PROCESS_STATUS: Query whether the tunnel is running via the agent API
  */
 
 import * as LocalMain from '@getflywheel/local/main';
@@ -27,15 +31,32 @@ import {
 	getNgrokProcessStatus,
 } from './ngrok.process';
 
+/**
+ * Dependencies required by the ngrok IPC handlers.
+ */
 export interface NgrokIpcDeps {
 	wpCli: LocalMain.Services.WpCli;
 	siteData: LocalMain.Services.SiteDataService;
 	logger: { info: (msg: string) => void; warn: (msg: string) => void };
 }
 
+/**
+ * Registers all ngrok-related IPC listeners on the main process.
+ *
+ * Called once from main.ts during addon initialization. Each listener
+ * pairs with a `LocalRenderer.ipcAsync()` call in the renderer.
+ *
+ * @param deps -- Service dependencies injected from main.ts.
+ */
 export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 	const { wpCli, siteData, logger } = deps;
 
+	/**
+	 * GET_NGROK -- Returns the cached ngrok state for a site.
+	 *
+	 * Called on component mount to initialize the UI.
+	 * Returns { enabled: false, url: '' } if no cache exists.
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_NGROK,
 		async (siteId: string) => {
@@ -48,6 +69,13 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * APPLY_NGROK -- Saves the ngrok URL to cache without touching wp-config.php.
+	 *
+	 * Called when the user clicks "Save". The URL is persisted so it survives
+	 * app restarts, but no wp-config.php constants are written until the user
+	 * clicks "Start".
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.APPLY_NGROK,
 		async (siteId: string, url: string) => {
@@ -56,6 +84,20 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * ENABLE_NGROK -- Enables or disables ngrok for a site.
+	 *
+	 * When enabling:
+	 *   1. Resolve URL collisions (disable conflicting sites, remove their
+	 *      wp-config.php constants, kill their processes, notify renderer).
+	 *   2. Set WP_HOME and WP_SITEURL on the current site.
+	 *   3. Update cache with enabled: true.
+	 *
+	 * When disabling:
+	 *   1. Kill any running ngrok process for this site.
+	 *   2. Remove WP_HOME and WP_SITEURL from wp-config.php.
+	 *   3. Update cache with enabled: false (URL preserved for re-enabling).
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.ENABLE_NGROK,
 		async (siteId: string, enabled: boolean, url: string) => {
@@ -92,6 +134,12 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * CLEAR_NGROK -- Clears the ngrok URL mapping entirely.
+	 *
+	 * Kills any running process, removes wp-config.php constants if enabled,
+	 * and removes the ngrok key from the SiteJSON cache.
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.CLEAR_NGROK,
 		async (siteId: string) => {
@@ -109,6 +157,17 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * START_NGROK_PROCESS -- Spawns the ngrok CLI process for a site.
+	 *
+	 * Reads the cached URL, resolves the site's domain and HTTP port,
+	 * and delegates to startNgrokProcess() which handles checking the
+	 * agent API for existing tunnels before spawning.
+	 *
+	 * On success, pushes a NGROK_PROCESS_STATUS_CHANGED event with 'running'.
+	 * If the process exits later (clean or error), the onExit callback pushes
+	 * a 'stopped' event with an optional error message.
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.START_NGROK_PROCESS,
 		async (siteId: string) => {
@@ -136,6 +195,12 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * STOP_NGROK_PROCESS -- Kills the ngrok CLI process for a site.
+	 *
+	 * Pushes a NGROK_PROCESS_STATUS_CHANGED event with 'stopped' so
+	 * the renderer updates the status indicator immediately.
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.STOP_NGROK_PROCESS,
 		async (siteId: string) => {
@@ -145,6 +210,13 @@ export function registerNgrokIpc(deps: NgrokIpcDeps): void {
 		},
 	);
 
+	/**
+	 * GET_NGROK_PROCESS_STATUS -- Returns whether the tunnel is running.
+	 *
+	 * Queries the ngrok agent API for a tunnel matching this site's URL.
+	 * Only reports 'running' if the site also has ngrok enabled in cache,
+	 * so that sites sharing the same URL don't all show "Tunnel active".
+	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_NGROK_PROCESS_STATUS,
 		async (siteId: string) => {

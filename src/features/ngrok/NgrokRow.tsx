@@ -1,11 +1,24 @@
 /**
  * NgrokRow.tsx -- React component for managing ngrok tunnels.
  *
- * Renders a TableListRow with: URL input, Save button, Clear button,
- * Start/Stop button, and a status indicator.
+ * Exports a factory function (`createNgrokRow`) that accepts a React
+ * instance and returns the component. This factory pattern is necessary because
+ * Local provides its own React instance via `context.React`, and we must use
+ * that rather than importing React directly (version mismatch risk).
  *
- * Start enables wp-config.php constants AND spawns the ngrok tunnel.
- * Stop kills the tunnel AND removes the constants.
+ * The component renders a TableListRow with:
+ *   - URL text input for entering the ngrok domain
+ *   - Save button to persist the URL to cache
+ *   - Clear button to remove the URL mapping
+ *   - Start/Stop button that enables wp-config.php constants AND spawns/kills
+ *     the ngrok tunnel in one step
+ *   - Status indicator (green/gray dot) showing tunnel state via the agent API
+ *   - Inline error display for ngrok failures
+ *
+ * State is loaded from the main process on mount via GET_NGROK and
+ * GET_NGROK_PROCESS_STATUS. Push events (NGROK_CHANGED,
+ * NGROK_PROCESS_STATUS_CHANGED) keep the UI in sync when changes
+ * happen from other sites or from the main process (e.g. site stopped).
  */
 
 import * as LocalRenderer from '@getflywheel/local/renderer';
@@ -18,6 +31,12 @@ interface NgrokRowProps {
 	site: { id: string };
 }
 
+/**
+ * Factory function that creates the NgrokRow component.
+ *
+ * @param React -- The React instance from Local's addon context.
+ * @returns     -- The NgrokRow functional component.
+ */
 export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRowProps> {
 	const { useState, useEffect, useCallback } = React;
 
@@ -30,6 +49,11 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 		const [processStatus, setProcessStatus] = useState<'stopped' | 'running'>('stopped');
 		const [error, setError] = useState('');
 
+		/**
+		 * On mount: fetch cached state and process status from main process,
+		 * subscribe to push events for cross-site updates.
+		 * On unmount: unsubscribe from all IPC listeners.
+		 */
 		useEffect(() => {
 			let active = true;
 
@@ -85,6 +109,7 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 			};
 		}, [site.id]);
 
+		/** Updates the URL input value (not yet persisted). */
 		const handleUrlChange = useCallback(
 			(event: any) => {
 				setUrl(event.target.value);
@@ -92,6 +117,7 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 			[],
 		);
 
+		/** Persists the URL to cache via APPLY_NGROK. */
 		const handleApply = useCallback(
 			async () => {
 				const trimmed = url.trim();
@@ -113,6 +139,7 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 			[site.id, url],
 		);
 
+		/** Clears the URL mapping and constants via CLEAR_NGROK. */
 		const handleClear = useCallback(
 			async () => {
 				setUpdating(true);
@@ -130,6 +157,14 @@ export function createNgrokRow(React: typeof import('react')): React.FC<NgrokRow
 			[site.id],
 		);
 
+		/**
+		 * Starts or stops the ngrok tunnel.
+		 *
+		 * Start: ENABLE_NGROK(true) -> sets wp-config.php constants,
+		 *        then START_NGROK_PROCESS -> spawns the tunnel.
+		 * Stop:  STOP_NGROK_PROCESS -> kills the tunnel,
+		 *        then ENABLE_NGROK(false) -> removes wp-config.php constants.
+		 */
 		const handleStartStop = useCallback(
 			async () => {
 				if (!savedUrl.trim()) {
