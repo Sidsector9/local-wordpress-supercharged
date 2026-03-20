@@ -421,6 +421,82 @@ export async function verifyXhprofInstalled(
 }
 
 // ---------------------------------------------------------------------------
+// mu-plugin functions
+// ---------------------------------------------------------------------------
+
+/** Path to the canonical mu-plugin on the host. */
+export function getMuPluginDir(): string {
+	return path.join(os.homedir(), '.wp-profiler', 'mu-plugin');
+}
+
+/** Path to the canonical mu-plugin PHP file. */
+export function getMuPluginPath(): string {
+	return path.join(getMuPluginDir(), 'wp-profiler-agent.php');
+}
+
+/** Path to the mu-plugin source bundled with the addon. */
+function getMuPluginSource(): string {
+	return path.join(__dirname, 'wp-profiler-agent.php');
+}
+
+/**
+ * Deploys the profiler mu-plugin:
+ * 1. Copies the canonical plugin file to ~/.wp-profiler/mu-plugin/
+ * 2. Symlinks it into the site's wp-content/mu-plugins/
+ *
+ * The canonical copy is always overwritten to ensure the latest version.
+ * The symlink is only created if it doesn't already point to the right target.
+ */
+export async function deployMuPlugin(
+	site: Local.Site,
+	onLog: (msg: string) => void,
+): Promise<void> {
+	const canonicalDir = getMuPluginDir();
+	const canonicalPath = getMuPluginPath();
+	const source = getMuPluginSource();
+
+	// Step 1: Write canonical copy (always overwrite to pick up updates)
+	await fs.ensureDir(canonicalDir);
+	await fs.copy(source, canonicalPath, { overwrite: true });
+	onLog('Profiler agent updated at ~/.wp-profiler/mu-plugin/');
+
+	// Step 2: Symlink into site's mu-plugins directory
+	const siteMuPluginsDir = path.join(site.paths.webRoot, 'wp-content', 'mu-plugins');
+	await fs.ensureDir(siteMuPluginsDir);
+
+	const symlinkPath = path.join(siteMuPluginsDir, 'wp-profiler-agent.php');
+
+	// Check if symlink already exists and points to the right target
+	if (fs.existsSync(symlinkPath)) {
+		const stat = await fs.lstat(symlinkPath);
+		if (stat.isSymbolicLink()) {
+			const target = await fs.readlink(symlinkPath);
+			if (target === canonicalPath) {
+				onLog('Profiler agent already linked into site');
+				return;
+			}
+			// Wrong target -- remove and recreate
+			await fs.remove(symlinkPath);
+		} else {
+			// It's a regular file, not our symlink -- don't overwrite
+			onLog('Warning: wp-profiler-agent.php exists as a regular file, skipping symlink');
+			return;
+		}
+	}
+
+	await fs.ensureSymlink(canonicalPath, symlinkPath);
+	onLog('Profiler agent linked into site mu-plugins');
+}
+
+/**
+ * Checks whether the mu-plugin is deployed for a site.
+ */
+export function checkMuPluginInstalled(site: Local.Site): boolean {
+	const symlinkPath = path.join(site.paths.webRoot, 'wp-content', 'mu-plugins', 'wp-profiler-agent.php');
+	return fs.existsSync(symlinkPath);
+}
+
+// ---------------------------------------------------------------------------
 // k6 functions
 // ---------------------------------------------------------------------------
 
@@ -690,7 +766,11 @@ export async function getProfilerStatus(
 
 	const k6Status = await checkK6Installed();
 
-	return { xhprof: xhprofStatus, k6: k6Status };
+	const muPluginStatus: ToolCheckResult = checkMuPluginInstalled(site)
+		? { status: 'ready', version: 'installed' }
+		: { status: 'missing' };
+
+	return { xhprof: xhprofStatus, k6: k6Status, muPlugin: muPluginStatus };
 }
 
 // ---------------------------------------------------------------------------

@@ -21,8 +21,8 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "prepare": "tsc",
+    "build": "tsc && cp src/features/profiler-setup/wp-profiler-agent.php lib/features/profiler-setup/",
+    "prepare": "tsc && cp src/features/profiler-setup/wp-profiler-agent.php lib/features/profiler-setup/",
     "watch": "yarn run build --watch",
     "lint": "eslint .",
     "test": "yarn jest",

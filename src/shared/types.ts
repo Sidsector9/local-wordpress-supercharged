@@ -89,6 +89,7 @@ export interface ToolCheckResult {
 export interface ProfilerSetupStatus {
 	xhprof: ToolCheckResult;
 	k6: ToolCheckResult;
+	muPlugin: ToolCheckResult;
 }
 
 /**

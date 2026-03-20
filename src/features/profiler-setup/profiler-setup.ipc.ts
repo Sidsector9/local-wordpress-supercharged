@@ -23,6 +23,7 @@ import {
 	verifyXhprofInstalled,
 	checkK6Installed,
 	downloadAndInstallK6,
+	deployMuPlugin,
 	getProfilerStatus,
 	writeProfilerCache,
 } from './profiler-setup.service';
@@ -90,6 +91,7 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 				return {
 					xhprof: { status: 'error', error: 'PHP service not found for this site' },
 					k6: (await checkK6Installed()),
+					muPlugin: { status: 'missing' },
 				};
 			}
 
@@ -130,6 +132,7 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 
 			let xhprofResult: ProfilerSetupStatus['xhprof'] = { status: 'missing' };
 			let k6Result: ProfilerSetupStatus['k6'] = { status: 'missing' };
+			let muPluginResult: ProfilerSetupStatus['muPlugin'] = { status: 'missing' };
 
 			// -- xhprof setup --
 			if (!phpService) {
@@ -212,11 +215,27 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 				logger.warn(`k6 setup failed for site ${siteId}: ${e.message}`);
 			}
 
-			const status: ProfilerSetupStatus = { xhprof: xhprofResult, k6: k6Result };
+			// -- mu-plugin setup --
+			try {
+				await deployMuPlugin(site as unknown as Local.Site, onLog);
+				muPluginResult = { status: 'ready', version: 'installed' };
+			} catch (e: any) {
+				muPluginResult = { status: 'error', error: e.message };
+				onLog(`mu-plugin setup failed: ${e.message}`);
+				logger.warn(`mu-plugin setup failed for site ${siteId}: ${e.message}`);
+			}
+
+			const status: ProfilerSetupStatus = {
+				xhprof: xhprofResult,
+				k6: k6Result,
+				muPlugin: muPluginResult,
+			};
 
 			// Persist setup state
 			const phpVersion = phpService?.binVersion;
-			const allReady = xhprofResult.status === 'ready' && k6Result.status === 'ready';
+			const allReady = xhprofResult.status === 'ready'
+				&& k6Result.status === 'ready'
+				&& muPluginResult.status === 'ready';
 			writeProfilerCache(siteData, siteId, {
 				setupCompleted: allReady,
 				phpVersion,

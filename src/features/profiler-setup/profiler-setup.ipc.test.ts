@@ -63,6 +63,7 @@ describe('registerProfilerSetupIpc', () => {
 			const expectedStatus = {
 				xhprof: { status: 'ready' as const, version: '2.3.10' },
 				k6: { status: 'ready' as const, version: 'v0.54.0' },
+				muPlugin: { status: 'ready' as const, version: 'installed' },
 			};
 			mockService.getProfilerStatus.mockResolvedValue(expectedStatus);
 
@@ -102,6 +103,7 @@ describe('registerProfilerSetupIpc', () => {
 			mockService.verifyXhprofInstalled.mockResolvedValue({ status: 'ready', version: 'installed' });
 			mockService.checkK6Installed.mockResolvedValue({ status: 'missing' });
 			mockService.downloadAndInstallK6.mockResolvedValue(undefined);
+			mockService.deployMuPlugin.mockResolvedValue(undefined);
 			mockService.writeProfilerCache.mockImplementation(() => {});
 		});
 

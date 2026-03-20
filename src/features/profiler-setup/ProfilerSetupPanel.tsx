@@ -126,10 +126,13 @@ export function createProfilerSetupPanel(
 
 		const allReady = status
 			&& status.xhprof.status === 'ready'
-			&& status.k6.status === 'ready';
+			&& status.k6.status === 'ready'
+			&& status.muPlugin.status === 'ready';
 
 		const hasError = status
-			&& (status.xhprof.status === 'error' || status.k6.status === 'error');
+			&& (status.xhprof.status === 'error'
+				|| status.k6.status === 'error'
+				|| status.muPlugin.status === 'error');
 
 		return (
 			<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -173,6 +176,7 @@ export function createProfilerSetupPanel(
 					<div style={{ fontSize: '13px', lineHeight: '1.6' }}>
 						<ToolStatusLine label="xhprof" result={status.xhprof} />
 						<ToolStatusLine label="k6" result={status.k6} />
+						<ToolStatusLine label="profiler agent" result={status.muPlugin} />
 					</div>
 				)}
 
