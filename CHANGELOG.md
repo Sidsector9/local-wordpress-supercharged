@@ -1,5 +1,23 @@
 # Changelog
 
+## Version 1.7 -- [`3c39252`](../../commit/3c3925216ca17f1d9abc94190d6190baae14d4d3)
+
+### Profiler agent mu-plugin
+
+- Added `wp-profiler-agent.php` mu-plugin deployed as step 3 of Setup Profiler
+- Canonical copy written to `~/.wp-profiler/mu-plugin/`, symlinked into each site's `wp-content/mu-plugins/`
+- Zero overhead on normal requests -- only activates when `X-Profile-Request: 1` header is present
+- Starts xhprof profiling before regular plugins/themes load (mu-plugin execution order)
+- Collects per-request data on shutdown via `register_shutdown_function()`
+- Call-site attribution via Reflection -- resolves function names to file paths and classifies as plugin/theme/mu-plugin/core
+- Query argument capture via `pre_get_posts` hook -- records `posts_per_page`, `post_type`, and caller for every WP_Query
+- Slow query logging when `SAVEQUERIES` is enabled (queries > 10ms)
+- Pattern detection: flags `EXTERNAL_HTTP_CALL` and `EXCESSIVE_OPTION_READS`
+- Writes JSON to `wp-content/profiler-runs/{run_id}/{request_id}.json`
+- REST endpoints: `GET /wp-json/profiler/v1/runs` (list runs) and `GET /wp-json/profiler/v1/runs/{run_id}` (get run data)
+- Added `muPlugin` field to `ProfilerSetupStatus` type and verification checklist UI
+- Build script updated to copy `.php` file into `lib/` since tsc only compiles TypeScript
+
 ## Version 1.6 -- [`0a477fb`](../../commit/0a477fb39437ed1e56cb3a9302a531770a7721fe)
 
 ### WP Profiler setup infrastructure
