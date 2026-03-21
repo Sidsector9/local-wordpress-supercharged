@@ -35,15 +35,19 @@ Options:
   --top <n>            Number of rows to show per table (default: 15)
   --baseline-requests  Number of warm baseline requests (default: 5)
   --ramp-up <time>     Ramp-up duration to reach target users (default: 5s)
+
   --help               Show this help
 `);
 	process.exit(0);
 }
 
 function getArg(name, defaultValue) {
-	const idx = args.indexOf(name);
-	if (idx === -1) return defaultValue;
-	return args[idx + 1];
+	// Handle both --flag value and --flag=value
+	for (let i = 0; i < args.length; i++) {
+		if (args[i] === name) return args[i + 1];
+		if (args[i].startsWith(name + '=')) return args[i].slice(name.length + 1);
+	}
+	return defaultValue;
 }
 
 function getArgList(name, defaultValue) {
@@ -511,7 +515,9 @@ function printReport(baselineData, loadData, baselineSummary, loadSummary) {
 	console.log(`  ${padRight('#', 4)} ${padRight('Plugin/Theme', 28)} ${padLeft('Wall Time', 10)} ${padLeft('CPU', 10)} ${padLeft('Memory', 10)} ${padLeft('Share', 7)} ${padLeft('Degrad.', 9)} ${'Status'}`);
 	console.log(`  ${'-'.repeat(4)} ${'-'.repeat(28)} ${'-'.repeat(10)} ${'-'.repeat(10)} ${'-'.repeat(10)} ${'-'.repeat(7)} ${'-'.repeat(9)} ${'-'.repeat(10)}`);
 
-	pluginSummary.slice(0, topN).forEach((p, i) => {
+	const filteredPluginSummary = pluginSummary;
+
+	filteredPluginSummary.slice(0, topN).forEach((p, i) => {
 		const color = statusColor(p.status);
 		const ratioStr = p.ratio > 0 ? `${p.ratio.toFixed(1)}x` : '--';
 		console.log(
@@ -522,64 +528,75 @@ function printReport(baselineData, loadData, baselineSummary, loadSummary) {
 	console.log(`\n  ${COLORS.dim}Wall Time = total time including I/O waits | CPU = actual processing time`);
 	console.log(`  Degrad. = wall time under load vs baseline (PROBLEM > 6x | WARNING 3-6x | MODERATE 1.5-3x | OK < 1.5x)${COLORS.reset}\n`);
 
-	// Hotspot detail table
-	console.log(`${thinLine}\n`);
-	console.log(`${COLORS.bold}${COLORS.magenta}HOTSPOT DETAIL${COLORS.reset}`);
-	console.log(`${COLORS.dim}  Exact function calls consuming the most time. Pinpoints the file and line number.${COLORS.reset}\n`);
-	console.log(`  ${padRight('#', 4)} ${padRight('Plugin', 22)} ${padRight('Function', 35)} ${padLeft('Wall', 8)} ${padLeft('CPU', 8)} ${padLeft('Mem', 8)} ${padLeft('Calls', 7)} ${padLeft('Degrad.', 9)} ${'Issue'}`);
-	console.log(`  ${'-'.repeat(4)} ${'-'.repeat(22)} ${'-'.repeat(35)} ${'-'.repeat(8)} ${'-'.repeat(8)} ${'-'.repeat(8)} ${'-'.repeat(7)} ${'-'.repeat(9)} ${'-'.repeat(15)}`);
+	// Scaling Breakdown -- grouped by plugin, only for flagged plugins
+	// For each PROBLEM/WARNING/MODERATE plugin, show the functions inside it
+	// that degrade, sorted by worst scaling ratio
+	const flaggedPlugins = pluginSummary.filter(
+		p => p.status === 'PROBLEM' || p.status === 'WARNING' || p.status === 'MODERATE'
+	);
 
-	hotspots.slice(0, topN).forEach((h, i) => {
-		const color = statusColor(classifyScaling(h.ratio));
-		const ratioStr = h.ratio > 0 ? `${h.ratio.toFixed(1)}x` : '--';
-		const issues = h.patterns.length > 0 ? h.patterns.join(', ') : '';
-		console.log(
-			`  ${padRight(i + 1 + '.', 4)} ${padRight(h.plugin, 22)} ${padRight(h.func, 35)} ${padLeft(formatMs(h.loadWt), 8)} ${padLeft(formatMs(h.loadCpu), 8)} ${padLeft(formatBytes(h.loadMu), 8)} ${padLeft(h.calls + 'x', 7)} ${padLeft(ratioStr, 9)} ${color}${issues}${COLORS.reset}`,
-		);
-		if (h.file) {
-			console.log(`       ${COLORS.dim}-> ${h.file}${COLORS.reset}`);
-		}
-	});
-
-	console.log(`\n  ${COLORS.dim}Issue labels:`);
-	console.log(`  UNBOUNDED    = get_posts() with no limit (posts_per_page = -1)`);
-	console.log(`  EXT_HTTP     = makes an external HTTP request during page load`);
-	console.log(`  EXCESS_READS = reads the same DB option > 10 times per request${COLORS.reset}\n`);
-
-	// Worst scaling table -- functions that degrade the most under load
-	const worstScaling = hotspots
-		.filter(h => h.ratio >= 1.5 && (h.baseWt > 500 || h.baseCpu > 500 || h.baseMu > 1024))
-		.sort((a, b) => b.ratio - a.ratio);
-
-	if (worstScaling.length > 0) {
+	if (flaggedPlugins.length > 0) {
 		console.log(`${thinLine}\n`);
-		console.log(`${COLORS.bold}${COLORS.yellow}WORST SCALING${COLORS.reset}`);
-		console.log(`${COLORS.dim}  Functions that degrade most under concurrent traffic, ranked by worst metric.${COLORS.reset}\n`);
-		console.log(`  ${padRight('#', 4)} ${padRight('Plugin', 22)} ${padRight('Function', 30)} ${padLeft('Wall', 7)} ${padLeft('CPU', 7)} ${padLeft('Mem', 7)} ${padLeft('Worst', 7)} ${'Bottleneck'}`);
-		console.log(`  ${'-'.repeat(4)} ${'-'.repeat(22)} ${'-'.repeat(30)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(12)}`);
+		console.log(`${COLORS.bold}${COLORS.magenta}SCALING BREAKDOWN${COLORS.reset}`);
+		console.log(`${COLORS.dim}  For each flagged plugin, the specific functions that degrade under concurrent traffic.${COLORS.reset}`);
+		console.log(`${COLORS.dim}  Bottleneck: Wall = I/O contention (DB locks, network) | CPU = processing | Memory = allocation${COLORS.reset}\n`);
 
-		worstScaling.slice(0, topN).forEach((h, i) => {
-			const status = classifyScaling(h.ratio);
-			const color = statusColor(status);
-			const fmtRatio = (r) => r > 0 ? `${r.toFixed(1)}x` : '--';
+		const fmtRatio = (r) => r > 0 ? `${r.toFixed(1)}x` : '--';
 
-			// Determine which metric is the bottleneck
-			let bottleneck = 'Wall';
-			let worstVal = h.ratioWt;
-			if (h.ratioCpu > worstVal) { bottleneck = 'CPU'; worstVal = h.ratioCpu; }
-			if (h.ratioMu > worstVal) { bottleneck = 'Memory'; worstVal = h.ratioMu; }
+		for (const plugin of flaggedPlugins) {
+			const pluginHotspots = hotspots
+				.filter(h => h.plugin === plugin.name && h.ratio >= 1.5)
+				.sort((a, b) => b.ratio - a.ratio);
 
-			console.log(
-				`  ${padRight(i + 1 + '.', 4)} ${padRight(h.plugin, 22)} ${padRight(h.func, 30)} ${padLeft(fmtRatio(h.ratioWt), 7)} ${padLeft(fmtRatio(h.ratioCpu), 7)} ${padLeft(fmtRatio(h.ratioMu), 7)} ${color}${padLeft(fmtRatio(h.ratio), 7)}${COLORS.reset} ${bottleneck}`,
-			);
-			if (h.file) {
-				console.log(`       ${COLORS.dim}-> ${h.file}${COLORS.reset}`);
+			const color = statusColor(plugin.status);
+			console.log(`  ${color}${COLORS.bold}${plugin.name}${COLORS.reset} ${color}(${fmtRatio(plugin.ratio)} ${plugin.status})${COLORS.reset}`);
+
+			if (pluginHotspots.length === 0) {
+				console.log(`  ${COLORS.dim}  No individual functions show significant degradation.`);
+				console.log(`  The slowdown is spread across many small calls within this plugin.${COLORS.reset}\n`);
+				continue;
 			}
-		});
 
-		console.log(`\n  ${COLORS.dim}Wall/CPU/Mem columns show degradation ratio for each metric.`);
-		console.log(`  Worst = highest of the three. Bottleneck = which metric scaled worst.`);
-		console.log(`  Wall = I/O contention (DB locks, network) | CPU = processing contention | Memory = allocation pressure${COLORS.reset}\n`);
+			console.log(`  ${padRight('', 4)} ${padRight('Function', 40)} ${padLeft('Wall', 7)} ${padLeft('CPU', 7)} ${padLeft('Mem', 7)} ${padLeft('Worst', 7)} ${'Bottleneck'}`);
+			console.log(`  ${'-'.repeat(4)} ${'-'.repeat(40)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(7)} ${'-'.repeat(12)}`);
+
+			pluginHotspots.slice(0, topN).forEach((h, i) => {
+				let bottleneck = 'Wall';
+				let worstVal = h.ratioWt;
+				if (h.ratioCpu > worstVal) { bottleneck = 'CPU'; worstVal = h.ratioCpu; }
+				if (h.ratioMu > worstVal) { bottleneck = 'Memory'; worstVal = h.ratioMu; }
+
+				const rowColor = statusColor(classifyScaling(h.ratio));
+				console.log(
+					`  ${padRight(i + 1 + '.', 4)} ${padRight(h.func, 40)} ${padLeft(fmtRatio(h.ratioWt), 7)} ${padLeft(fmtRatio(h.ratioCpu), 7)} ${padLeft(fmtRatio(h.ratioMu), 7)} ${rowColor}${padLeft(fmtRatio(h.ratio), 7)}${COLORS.reset} ${bottleneck}`,
+				);
+				if (h.file) {
+					console.log(`       ${COLORS.dim}-> ${h.file}${COLORS.reset}`);
+				}
+			});
+
+			// Diagnosis: summarize the dominant bottleneck for this plugin
+			const wallCount = pluginHotspots.filter(h => h.ratioWt >= h.ratioCpu && h.ratioWt >= h.ratioMu).length;
+			const cpuCount = pluginHotspots.filter(h => h.ratioCpu > h.ratioWt && h.ratioCpu >= h.ratioMu).length;
+			const memCount = pluginHotspots.filter(h => h.ratioMu > h.ratioWt && h.ratioMu > h.ratioCpu).length;
+			const dominant = wallCount >= cpuCount && wallCount >= memCount ? 'Wall time'
+				: cpuCount >= memCount ? 'CPU' : 'Memory';
+
+			const diagnosisMap = {
+				'Wall time': 'Database queries or external I/O from this plugin are contending for locks under concurrent traffic.',
+				'CPU': 'This plugin does heavy processing (serialization, regex, loops) that compounds with concurrent requests.',
+				'Memory': 'Each concurrent request allocates significant memory in this plugin, causing pressure under load.',
+			};
+
+			console.log(`\n  ${COLORS.dim}  Diagnosis: ${dominant} is the primary bottleneck.`);
+			console.log(`  ${diagnosisMap[dominant]}${COLORS.reset}\n`);
+		}
+	}
+
+	// If no plugins are flagged, show a success message
+	if (flaggedPlugins.length === 0) {
+		console.log(`${thinLine}\n`);
+		console.log(`  ${COLORS.green}${COLORS.bold}All plugins scale well under the tested load.${COLORS.reset}\n`);
 	}
 
 	console.log(`${line}\n`);
