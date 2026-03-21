@@ -141,4 +141,32 @@ export const IPC_CHANNELS = {
 	RUN_PROFILER_SETUP: 'supercharged:run-profiler-setup',
 	PROFILER_SETUP_LOG: 'supercharged:profiler-setup-log',
 	PROFILER_SETUP_COMPLETED: 'supercharged:profiler-setup-completed',
+	GET_PLUGIN_LIST: 'supercharged:get-plugin-list',
+	GET_CONFLICT_OVERRIDES: 'supercharged:get-conflict-overrides',
+	SET_CONFLICT_OVERRIDE: 'supercharged:set-conflict-override',
+	CLEAR_CONFLICT_OVERRIDES: 'supercharged:clear-conflict-overrides',
 } as const;
+
+/**
+ * A WordPress plugin as returned by WP-CLI.
+ */
+export interface PluginInfo {
+	name: string;
+	status: 'active' | 'inactive';
+	version: string;
+	file: string;
+}
+
+/**
+ * Override config stored at wp-content/conflict-test-overrides.json.
+ * Keys are plugin basenames, values are the desired active state.
+ */
+export interface ConflictOverrides {
+	overrides: Record<string, boolean>;
+}
+
+/**
+ * Plugin dependency map. Key is plugin file (e.g. "google-listings-and-ads/google-listings-and-ads.php"),
+ * value is comma-separated slug list of required plugins (e.g. "woocommerce").
+ */
+export type PluginDependencyMap = Record<string, string>;

@@ -11,6 +11,7 @@ import * as LocalRenderer from '@getflywheel/local/renderer';
 import { registerDebugConstantsHooks } from './features/debug-constants/debug-constants.hooks';
 import { registerNgrokHooks } from './features/ngrok/ngrok.hooks';
 import { registerProfilerSetupHooks } from './features/profiler-setup/profiler-setup.hooks';
+import { registerConflictTestHooks } from './features/conflict-test/conflict-test.hooks';
 
 export default function (context: LocalRenderer.AddonRendererContext): void {
 	const { React, hooks } = context;
@@ -18,4 +19,5 @@ export default function (context: LocalRenderer.AddonRendererContext): void {
 	registerDebugConstantsHooks(React, hooks);
 	registerNgrokHooks(React, hooks);
 	registerProfilerSetupHooks(React, hooks);
+	registerConflictTestHooks(React, hooks);
 }
