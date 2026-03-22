@@ -129,7 +129,7 @@ describe('fetchDebugConstants', () => {
 
 		await fetchDebugConstants(wpCli as any, site);
 
-		expect(wpCli.run).toHaveBeenCalledTimes(3);
+		expect(wpCli.run).toHaveBeenCalledTimes(4);
 	});
 
 	it('passes correct args to wpCli.run for each constant', async () => {

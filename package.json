@@ -1,5 +1,5 @@
 {
-  "name": "local-wordpress-supercharged",
+  "name": "local-addon-wordpress-supercharged",
   "productName": "Local WordPress Supercharged",
   "version": "1.0.0",
   "author": "Local Team",
@@ -8,8 +8,11 @@
   ],
   "bgColor": "#51bb7b",
   "icon": "icon.svg",
-  "slug": "local-wordpress-supercharged",
+  "slug": "local-addon-wordpress-supercharged",
   "description": "A quick start to your amazing addon!",
+  "bin": {
+    "wp-profiler": "bin/wp-profiler.js"
+  },
   "renderer": "lib/renderer.js",
   "main": "lib/main.js",
   "repository": {
@@ -21,8 +24,8 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "prepare": "tsc",
+    "build": "tsc && cp src/features/profiler-setup/wp-profiler-agent.php lib/features/profiler-setup/ && cp src/features/conflict-test/wp-conflict-tester.php lib/features/conflict-test/",
+    "prepare": "tsc && cp src/features/profiler-setup/wp-profiler-agent.php lib/features/profiler-setup/ && cp src/features/conflict-test/wp-conflict-tester.php lib/features/conflict-test/",
     "watch": "yarn run build --watch",
     "lint": "eslint .",
     "test": "yarn jest",

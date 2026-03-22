@@ -99,8 +99,8 @@ describe('createWatcherManager', () => {
 			// Flush the async callback chain
 			await new Promise((r) => setImmediate(r));
 
-			// fetchDebugConstants calls wpCli.run 3 times (once per constant)
-			expect(wpCli.run).toHaveBeenCalledTimes(3);
+			// fetchDebugConstants calls wpCli.run 4 times (once per constant)
+			expect(wpCli.run).toHaveBeenCalledTimes(4);
 		});
 
 		it('suppresses re-fetch when selfWriting is active', async () => {

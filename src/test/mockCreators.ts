@@ -14,17 +14,23 @@ export function createMockSite(overrides: Partial<{
 	id: string;
 	path: string;
 	webRoot: string;
+	conf: string;
+	confTemplates: string;
 	superchargedAddon: any;
 }> = {}): Local.Site {
 	const id = overrides.id ?? 'test-site-id';
 	const sitePath = overrides.path ?? '/Users/Local Sites/test-site';
 	const webRoot = overrides.webRoot ?? `${sitePath}/app/public`;
+	const conf = overrides.conf ?? `${sitePath}/conf`;
+	const confTemplates = overrides.confTemplates ?? conf;
 
 	const site: any = {
 		id,
 		path: sitePath,
 		paths: {
 			webRoot,
+			conf,
+			confTemplates,
 		},
 	};
 
@@ -62,5 +68,47 @@ export function createMockLogger() {
 	return {
 		info: jest.fn(),
 		warn: jest.fn(),
+	};
+}
+
+/**
+ * Creates a mock LightningService with PHP binary paths and environment.
+ */
+export function createMockLightningService(overrides: Partial<{
+	bin: Record<string, string>;
+	$PATH: string;
+	binVersion: string;
+	env: NodeJS.ProcessEnv;
+}> = {}) {
+	return {
+		bin: overrides.bin ?? {
+			php: '/opt/local/lightning-services/php-8.2.0/bin/php',
+			phpize: '/opt/local/lightning-services/php-8.2.0/bin/phpize',
+			'php-config': '/opt/local/lightning-services/php-8.2.0/bin/php-config',
+		},
+		$PATH: overrides.$PATH ?? '/opt/local/lightning-services/php-8.2.0/bin',
+		binVersion: overrides.binVersion ?? '8.2.0',
+		env: overrides.env ?? {
+			PATH: '/opt/local/lightning-services/php-8.2.0/bin',
+		},
+	};
+}
+
+/**
+ * Creates a mock LightningServices service with jest.fn() methods.
+ */
+export function createMockLightningServices(defaultService?: ReturnType<typeof createMockLightningService>) {
+	return {
+		getSiteServiceByRole: jest.fn(() => defaultService ?? createMockLightningService()),
+	};
+}
+
+/**
+ * Creates a mock SiteProcessManager with jest.fn() methods.
+ */
+export function createMockSiteProcessManager() {
+	return {
+		restart: jest.fn().mockResolvedValue(undefined),
+		restartSiteService: jest.fn().mockResolvedValue(undefined),
 	};
 }

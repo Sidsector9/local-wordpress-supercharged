@@ -87,11 +87,12 @@ describe('registerDebugConstantsIpc', () => {
 			const handler = registeredHandlers[IPC_CHANNELS.GET_DEBUG_CONSTANTS];
 			const result = await handler('site-1');
 
-			expect(wpCli.run).toHaveBeenCalledTimes(3);
+			expect(wpCli.run).toHaveBeenCalledTimes(4);
 			expect(result).toEqual({
 				WP_DEBUG: true,
 				WP_DEBUG_LOG: true,
 				WP_DEBUG_DISPLAY: true,
+				SCRIPT_DEBUG: true,
 			});
 		});
 
@@ -110,7 +111,7 @@ describe('registerDebugConstantsIpc', () => {
 			const handler = registeredHandlers[IPC_CHANNELS.GET_DEBUG_CONSTANTS];
 			await handler('site-1');
 
-			expect(wpCli.run).toHaveBeenCalledTimes(3);
+			expect(wpCli.run).toHaveBeenCalledTimes(4);
 		});
 
 		it('writes to cache after fetching', async () => {
@@ -137,8 +138,8 @@ describe('registerDebugConstantsIpc', () => {
 			const handler = registeredHandlers[IPC_CHANNELS.SET_DEBUG_CONSTANT];
 			await handler('site-1', 'WP_DEBUG', true);
 
-			// 1 call for set + 3 calls for re-fetch
-			expect(wpCli.run).toHaveBeenCalledTimes(4);
+			// 1 call for set + 4 calls for re-fetch
+			expect(wpCli.run).toHaveBeenCalledTimes(5);
 
 			const firstCallArgs = wpCli.run.mock.calls[0][1];
 			expect(firstCallArgs).toContain('set');
@@ -148,7 +149,7 @@ describe('registerDebugConstantsIpc', () => {
 		it('deletes WP_DEBUG_DISPLAY when setting to true and it is defined', async () => {
 			// isConstantDefined succeeds -> defined = true
 			// deleteConstant succeeds
-			// then fetchDebugConstants (3 calls)
+			// then fetchDebugConstants (4 calls)
 			wpCli.run.mockResolvedValue('something');
 
 			const handler = registeredHandlers[IPC_CHANNELS.SET_DEBUG_CONSTANT];
@@ -156,7 +157,7 @@ describe('registerDebugConstantsIpc', () => {
 
 			// Call 0: isConstantDefined (config get)
 			// Call 1: deleteConstant (config delete)
-			// Calls 2-4: fetchDebugConstants (3x config get)
+			// Calls 2-5: fetchDebugConstants (4x config get)
 			const deleteCallArgs = wpCli.run.mock.calls[1][1];
 			expect(deleteCallArgs).toContain('delete');
 			expect(deleteCallArgs).toContain('WP_DEBUG_DISPLAY');

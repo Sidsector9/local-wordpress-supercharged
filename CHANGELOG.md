@@ -1,5 +1,114 @@
 # Changelog
 
+## Version 1.9 -- [`760ffdd`](../../commit/760ffdde26aa26814073357f82b84296b1887e47)
+
+### Conflict Testing
+
+- Added "Conflict Testing" panel under the Tools tab for quick plugin conflict testing
+- Displays all active/inactive plugins in a table with DB status indicator and Active toggle
+- Toggling a plugin on/off uses the `option_active_plugins` filter hook via an mu-plugin -- no database modifications
+- Override state stored in `wp-content/conflict-test-overrides.json` on disk
+- **Cascade deactivation**: deactivating a plugin (e.g. WooCommerce) automatically deactivates all plugins that depend on it
+- **Cascade activation**: activating a dependent plugin (e.g. Google Listings & Ads) automatically activates its required plugins
+- Dependency detection via WordPress 6.5+ `RequiresPlugins` header, fetched at load time and cached
+- "Reset All" button clears all overrides and restores original DB state
+- Retry button when site is not running
+- Deployed `wp-conflict-tester.php` mu-plugin alongside the profiler agent
+- Added 4 IPC channels: `GET_PLUGIN_LIST`, `GET_CONFLICT_OVERRIDES`, `SET_CONFLICT_OVERRIDE`, `CLEAR_CONFLICT_OVERRIDES`
+- Added `PluginInfo`, `ConflictOverrides`, `PluginDependencyMap` types
+
+## Version 1.8 -- [`1526857`](../../commit/152685752b30021589bbc2b7952ad7ac0dce48c7)
+
+### Two-phase load test runner CLI
+
+- Added `wp-profiler` CLI command available in Local's site shell via symlink at `~/.local/bin/wp-profiler`
+- Two-phase load testing: Phase A (baseline, 5 warm requests with 1 VU) then Phase B (N concurrent VUs with gradual ramp-up)
+- Realistic think time (1-3s random delay between requests) to simulate real user behavior
+- k6 metrics: P50/P90/P95/P99 latency, throughput (req/sec), error rate, displayed side-by-side for baseline vs load
+- xhprof profiling on all requests in both phases (no sampling asymmetry)
+- Auto-detects site URL from Local's `sites.json` based on current working directory
+- Deploys mu-plugin symlink automatically if missing
+- Cleans up previous profiling data before each run
+- k6 progress output streamed live to terminal
+- Ctrl+C kills k6 process cleanly
+- Duration must be greater than 2x ramp-up (validated with helpful error message)
+- xhprof overhead warning displayed before tests start
+
+### Report output
+
+- **PERFORMANCE** section with HTTP response times and throughput from k6 (baseline vs load side-by-side)
+- **SLOWEST PLUGINS** table with wall time, CPU, memory, share %, degradation ratio per plugin
+- **SCALING BREAKDOWN** replacing the old hotspot/worst-scaling tables -- groups functions by plugin, only for flagged plugins (PROBLEM/WARNING/MODERATE), with per-metric ratios (Wall/CPU/Mem), bottleneck label, and auto-generated diagnosis
+- Degradation ratio calculated as worst of wall time, CPU, and memory ratios
+- Success message when all plugins scale well
+- Memory formatting fixed for small/negative byte values
+- Full file paths in function call details
+- Color-coded table headers (cyan/magenta/yellow) with descriptions
+
+### CLI arguments
+
+- `--users` (default 50), `--duration` (default 10s), `--ramp-up` (default 5s)
+- `--urls` (space-separated paths), `--username`/`--password` (WP auth)
+- `--top` (rows per table), `--baseline-requests` (default 5)
+- `--site-url` (auto-detected), `--help`
+- Supports both `--flag value` and `--flag=value` syntax
+
+## Version 1.7 -- [`3c39252`](../../commit/3c3925216ca17f1d9abc94190d6190baae14d4d3)
+
+### Profiler agent mu-plugin
+
+- Added `wp-profiler-agent.php` mu-plugin deployed as step 3 of Setup Profiler
+- Canonical copy written to `~/.wp-profiler/mu-plugin/`, symlinked into each site's `wp-content/mu-plugins/`
+- Zero overhead on normal requests -- only activates when `X-Profile-Request: 1` header is present
+- Starts xhprof profiling before regular plugins/themes load (mu-plugin execution order)
+- Collects per-request data on shutdown via `register_shutdown_function()`
+- Call-site attribution via Reflection -- resolves function names to file paths and classifies as plugin/theme/mu-plugin/core
+- Query argument capture via `pre_get_posts` hook -- records `posts_per_page`, `post_type`, and caller for every WP_Query
+- Slow query logging when `SAVEQUERIES` is enabled (queries > 10ms)
+- Pattern detection: flags `EXTERNAL_HTTP_CALL` and `EXCESSIVE_OPTION_READS`
+- Writes JSON to `wp-content/profiler-runs/{run_id}/{request_id}.json`
+- REST endpoints: `GET /wp-json/profiler/v1/runs` (list runs) and `GET /wp-json/profiler/v1/runs/{run_id}` (get run data)
+- Added `muPlugin` field to `ProfilerSetupStatus` type and verification checklist UI
+- Build script updated to copy `.php` file into `lib/` since tsc only compiles TypeScript
+
+## Version 1.6 -- [`0a477fb`](../../commit/0a477fb39437ed1e56cb3a9302a531770a7721fe)
+
+### WP Profiler setup infrastructure
+
+- Added "WP Profiler" row under the Tools tab (`siteInfoUtilities` hook) with a one-click "Setup Profiler" button
+- Compiles xhprof PHP extension from source against Local's lightning-services PHP and caches the `.so` per PHP version at `~/.wp-profiler-cache/xhprof/{version}/`
+- Downloads k6 load test binary from GitHub releases to `~/.local/bin/k6` with OS-specific archive handling (`.zip` on macOS/Windows, `.tar.gz` on Linux)
+- Live log panel streams installation progress to the UI in real time via `PROFILER_SETUP_LOG` push events
+- Post-install verification checklist shows status of each tool with green/red indicators
+- Setup is idempotent -- skips already-installed tools on re-run
+
+### Electron environment workarounds
+
+- Patched Local's phpize/php-config at runtime to replace hardcoded CI build paths (`/Users/distiller/project/...`) with actual install paths
+- Created space-free symlinks to work around phpize rejecting paths containing spaces ("Application Support")
+- All compilation steps run through the user's login shell (`/bin/zsh -l -c`) so autoconf, make, and gcc are on PATH -- Electron doesn't inherit the user's shell PATH
+- Downloads missing `pcre2.h` header from PCRE2 GitHub before compiling -- Local's PHP headers reference it but don't ship it
+- Uses `{{extensionsDir}}/xhprof.so` in `php.ini.hbs` (Handlebars template variable) so Local resolves the path at runtime, avoiding spaces-in-path issues
+- Verifies installation by checking `.so` existence and ini config rather than running PHP CLI (which doesn't load the site's config)
+
+### Files added
+
+- `src/features/profiler-setup/profiler-setup.service.ts` -- pure functions for xhprof compilation, k6 download, path helpers, status checks
+- `src/features/profiler-setup/profiler-setup.service.test.ts` -- service unit tests
+- `src/features/profiler-setup/profiler-setup.ipc.ts` -- IPC handler registration (GET_PROFILER_STATUS, RUN_PROFILER_SETUP)
+- `src/features/profiler-setup/profiler-setup.ipc.test.ts` -- IPC handler tests
+- `src/features/profiler-setup/profiler-setup.hooks.tsx` -- renderer hook registration on `siteInfoUtilities`
+- `src/features/profiler-setup/ProfilerSetupPanel.tsx` -- React component with setup button, log panel, verification checklist
+- `src/test/mockLocal.ts` -- mock for `@getflywheel/local` core types (SiteServiceRole enum)
+
+### Files modified
+
+- `src/shared/types.ts` -- added 4 IPC channels, `ProfilerCache`, `ToolStatus`, `ToolCheckResult`, `ProfilerSetupStatus` types, extended `SuperchargedCache`
+- `src/main.ts` -- wired `registerProfilerSetupIpc` with `lightningServices` and `siteProcessManager`
+- `src/renderer.tsx` -- wired `registerProfilerSetupHooks`
+- `src/test/mockCreators.ts` -- added `createMockLightningService`, `createMockLightningServices`, `createMockSiteProcessManager`, extended `createMockSite` with `paths.conf` and `paths.confTemplates`
+- `jest.config.js` -- added `@getflywheel/local` module mapping
+
 ## Version 1.5 -- [`080ed82`](../../commit/080ed8287ee2bfd36e769023c12b3b6f28a6ad9d)
 
 ### ngrok URL override feature ([`779fafb`](../../commit/779fafb8bc17064ba1658ea360064737b4965ba0))

@@ -8,14 +8,16 @@
  */
 
 import * as LocalMain from '@getflywheel/local/main';
-import { IPC_CHANNELS } from './shared/types';
+import { IPC_CHANNELS, FEATURE_FLAGS } from './shared/types';
 import { registerDebugConstantsIpc } from './features/debug-constants/debug-constants.ipc';
 import { registerNgrokIpc } from './features/ngrok/ngrok.ipc';
+import { registerProfilerSetupIpc } from './features/profiler-setup/profiler-setup.ipc';
+import { registerConflictTestIpc } from './features/conflict-test/conflict-test.ipc';
 import { stopNgrokProcess } from './features/ngrok/ngrok.process';
 import { readNgrokCache, writeNgrokCache } from './features/ngrok/ngrok.service';
 
 export default function (context: LocalMain.AddonMainContext): void {
-	const { wpCli, siteData, localLogger } = LocalMain.getServiceContainer().cradle;
+	const { wpCli, siteData, localLogger, lightningServices, siteProcessManager } = LocalMain.getServiceContainer().cradle;
 
 	const logger = localLogger.child({
 		thread: 'main',
@@ -24,6 +26,10 @@ export default function (context: LocalMain.AddonMainContext): void {
 
 	registerDebugConstantsIpc({ wpCli, siteData, logger });
 	registerNgrokIpc({ wpCli, siteData, logger });
+	if (FEATURE_FLAGS.PROFILER) {
+		registerProfilerSetupIpc({ siteData, lightningServices, siteProcessManager, logger });
+	}
+	registerConflictTestIpc({ wpCli, siteData, logger });
 
 	context.hooks.addAction('siteStopped', (site: any) => {
 		const cached = readNgrokCache(site);

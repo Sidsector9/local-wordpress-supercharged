@@ -1,11 +1,34 @@
 # Local WordPress Supercharged
 
-A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- toggle debug constants, start ngrok tunnels, and more, all from the Site Overview page.
+A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- toggle debug constants, test plugin conflicts, start ngrok tunnels, and more.
 
 ## Features
 
 - One-Click ngrok Tunnels
 - Toggle Debug Constants
+
+### Conflict Testing
+
+Test plugin conflicts without modifying the database. Toggle plugins on/off via filter hooks -- changes take effect on the next page load and can be reset instantly.
+
+![conflict testing demo](gifs/conflict-testing.gif)
+
+- **No database changes** -- uses the `option_active_plugins` filter hook to intercept plugin loading at runtime
+- **Cascade deactivation** -- deactivating WooCommerce automatically deactivates all plugins that depend on it
+- **Cascade activation** -- activating a dependent plugin automatically activates its requirements
+- **Dependency awareness** -- reads WordPress 6.5+ `RequiresPlugins` headers to map plugin relationships
+- **Reset All** -- one click restores original database state
+- **DB vs Active indicators** -- clearly shows the real database status vs the overridden runtime state
+
+### Toggle Debug Constants
+
+Toggle `WP_DEBUG`, `WP_DEBUG_LOG`, `WP_DEBUG_DISPLAY`, and `SCRIPT_DEBUG` from the Site Overview page. No more editing `wp-config.php` by hand.
+
+![debug constants demo](gifs/debug-constants.gif)
+
+- **Instant switching** -- cached values mean zero delay when switching between sites
+- **Live sync** -- edit `wp-config.php` externally and the UI updates in real time
+- **Optimistic UI** -- switches update immediately, roll back on failure
 
 ### One-Click ngrok Tunnels
 
@@ -18,16 +41,6 @@ Expose your local WordPress site to the internet in one click. Paste your ngrok 
 - **Collision detection** -- handles multiple sites sharing the same ngrok URL gracefully
 - **Auto-cleanup** -- tunnels are killed automatically when a site is stopped
 - **Inline error reporting** -- ngrok errors surface directly in the UI
-
-### Toggle Debug Constants
-
-Toggle `WP_DEBUG`, `WP_DEBUG_LOG`, and `WP_DEBUG_DISPLAY` from the Site Overview page. No more editing `wp-config.php` by hand.
-
-![debug constants demo](gifs/debug-constants.gif)
-
-- **Instant switching** -- cached values mean zero delay when switching between sites
-- **Live sync** -- edit `wp-config.php` externally and the UI updates in real time
-- **Optimistic UI** -- switches update immediately, roll back on failure
 
 ## Installation
 
@@ -64,6 +77,7 @@ src/
   features/
     debug-constants/    # WP_DEBUG toggle feature
     ngrok/              # ngrok tunnel feature
+    conflict-test/      # Plugin conflict testing feature
 ```
 
 Each feature is self-contained under `src/features/`.
