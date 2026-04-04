@@ -11,6 +11,12 @@ import { registerConflictTestIpc } from './features/conflict-test/conflict-test.
 import { stopNgrokProcess } from './features/ngrok/ngrok.process';
 import { readNgrokCache, writeNgrokCache } from './features/ngrok/ngrok.service';
 
+/**
+ * Main process entry point. Registers IPC listeners for all addon features
+ * and sets up the siteStopped hook for ngrok cleanup.
+ *
+ * @param context
+ */
 export default function( context: LocalMain.AddonMainContext ): void {
 	const { wpCli, siteData, localLogger, lightningServices, siteProcessManager } = LocalMain.getServiceContainer().cradle;
 

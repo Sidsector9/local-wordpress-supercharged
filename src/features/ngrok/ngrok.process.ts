@@ -32,6 +32,10 @@ export function resolveNgrokBin(): string {
 	return resolvedNgrokPath;
 }
 
+/**
+ * Resolves the ngrok binary path on macOS/Linux by checking the user's
+ * login shell PATH first, then falling back to common install locations.
+ */
 function resolveNgrokUnix(): string {
 	const shell = process.env.SHELL || '/bin/sh';
 
@@ -56,6 +60,10 @@ function resolveNgrokUnix(): string {
 	return 'ngrok';
 }
 
+/**
+ * Resolves the ngrok binary path on Windows by checking the system PATH
+ * via `where`, then falling back to common install locations.
+ */
 function resolveNgrokWindows(): string {
 	const comspec = process.env.ComSpec || 'cmd.exe';
 
@@ -212,6 +220,11 @@ export async function startNgrokProcess(
 	}
 
 	let exited = false;
+	/**
+	 * Handles process exit or error, removes from tracking map, and notifies via onExit.
+	 *
+	 * @param codeOrError
+	 */
 	const cleanup = ( codeOrError?: number | NodeJS.ErrnoException | null ) => {
 		if ( exited ) {
 			return;

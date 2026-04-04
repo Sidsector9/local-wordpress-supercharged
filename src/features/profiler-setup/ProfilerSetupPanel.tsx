@@ -21,6 +21,13 @@ interface ProfilerSetupPanelProps {
 	site: { id: string };
 }
 
+/**
+ * Returns the appropriate label for the profiler setup action button
+ * based on the current installation and readiness state.
+ *
+ * @param installing
+ * @param allReady
+ */
 function getButtonLabel( installing: boolean, allReady: boolean | null ): string {
 	if ( installing ) {
 		return 'Installing...';

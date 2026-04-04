@@ -28,6 +28,13 @@ export function registerConflictTestHooks(
 	) );
 }
 
+/**
+ * Renders the conflict testing UI in the Tools tab, showing all plugins
+ * with toggle switches to enable/disable them via filter-based overrides.
+ *
+ * @param root0
+ * @param root0.site
+ */
 function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 	const { useState, useEffect, useCallback } = React;
 

@@ -34,6 +34,13 @@ export function registerDebugConstantsHooks(
 	) );
 }
 
+/**
+ * Renders toggle switches for WordPress debug constants (WP_DEBUG,
+ * WP_DEBUG_LOG, WP_DEBUG_DISPLAY, SCRIPT_DEBUG) in the Site Overview tab.
+ *
+ * @param root0
+ * @param root0.site
+ */
 function DebugSwitches( { site }: DebugSwitchesProps ) {
 	const { useState, useEffect, useCallback } = React;
 

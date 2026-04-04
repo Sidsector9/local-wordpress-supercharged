@@ -9,6 +9,12 @@ import { registerNgrokHooks } from './features/ngrok/NgrokRow';
 import { registerProfilerSetupHooks } from './features/profiler-setup/profiler-setup.hooks';
 import { registerConflictTestHooks } from './features/conflict-test/ConflictTestPanel';
 
+/**
+ * Renderer process entry point. Registers UI hooks for all addon features
+ * into Local's Site Overview and Tools tabs.
+ *
+ * @param context
+ */
 export default function( context: LocalRenderer.AddonRendererContext ): void {
 	const { React, hooks } = context;
 

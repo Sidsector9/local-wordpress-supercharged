@@ -27,6 +27,13 @@ export function registerNgrokHooks(
 	) );
 }
 
+/**
+ * Renders a row in the Site Overview tab with controls for starting/stopping
+ * an ngrok tunnel and configuring the tunnel URL override for the site.
+ *
+ * @param root0
+ * @param root0.site
+ */
 function NgrokRow( { site }: NgrokRowProps ) {
 	const { useState, useEffect, useCallback } = React;
 
