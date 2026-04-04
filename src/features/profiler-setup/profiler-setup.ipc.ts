@@ -36,7 +36,7 @@ export interface ProfilerSetupIpcDeps {
 	siteData: LocalMain.Services.SiteDataService;
 	lightningServices: LocalMain.Services.LightningServices;
 	siteProcessManager: LocalMain.Services.SiteProcessManager;
-	logger: { info: (msg: string) => void; warn: (msg: string) => void };
+	logger: { info: ( msg: string ) => void; warn: ( msg: string ) => void };
 }
 
 /**
@@ -44,20 +44,21 @@ export interface ProfilerSetupIpcDeps {
  *
  * If phpize or php-config are not in the bin dictionary, we look for them
  * in the same directory as the php binary.
+ * @param phpService
  */
-function getPhpBins(phpService: LocalMain.LightningService): {
+function getPhpBins( phpService: LocalMain.LightningService ): {
 	php: string;
 	phpize: string;
 	phpConfig: string;
 } {
 	const bin = phpService.bin ?? {};
-	const phpBin = bin['php'] ?? 'php';
-	const phpDir = path.dirname(phpBin);
+	const phpBin = bin.php ?? 'php';
+	const phpDir = path.dirname( phpBin );
 
 	return {
 		php: phpBin,
-		phpize: bin['phpize'] ?? path.join(phpDir, 'phpize'),
-		phpConfig: bin['php-config'] ?? path.join(phpDir, 'php-config'),
+		phpize: bin.phpize ?? path.join( phpDir, 'phpize' ),
+		phpConfig: bin[ 'php-config' ] ?? path.join( phpDir, 'php-config' ),
 	};
 }
 
@@ -69,7 +70,7 @@ function getPhpBins(phpService: LocalMain.LightningService): {
  *
  * @param deps -- Service dependencies injected from main.ts.
  */
-export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
+export function registerProfilerSetupIpc( deps: ProfilerSetupIpcDeps ): void {
 	const { siteData, lightningServices, siteProcessManager, logger } = deps;
 
 	/**
@@ -81,24 +82,24 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_PROFILER_STATUS,
-		async (siteId: string): Promise<ProfilerSetupStatus> => {
-			const site = siteData.getSite(siteId);
+		async ( siteId: string ): Promise<ProfilerSetupStatus> => {
+			const site = siteData.getSite( siteId );
 			const phpService = lightningServices.getSiteServiceByRole(
 				site as unknown as Local.Site,
 				Local.SiteServiceRole.PHP,
 			);
 
-			if (!phpService) {
+			if ( ! phpService ) {
 				return {
 					xhprof: { status: 'error', error: 'PHP service not found for this site' },
-					k6: (await checkK6Installed()),
+					k6: ( await checkK6Installed() ),
 					muPlugin: { status: 'missing' },
 				};
 			}
 
-			const { phpize } = getPhpBins(phpService);
-			const phpPrefix = path.dirname(path.dirname(phpize));
-			const extDir = await findExtensionDir(phpPrefix);
+			const { phpize } = getPhpBins( phpService );
+			const phpPrefix = path.dirname( path.dirname( phpize ) );
+			const extDir = await findExtensionDir( phpPrefix );
 
 			return getProfilerStatus(
 				extDir,
@@ -119,16 +120,16 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.RUN_PROFILER_SETUP,
-		async (siteId: string): Promise<ProfilerSetupStatus> => {
-			const site = siteData.getSite(siteId);
+		async ( siteId: string ): Promise<ProfilerSetupStatus> => {
+			const site = siteData.getSite( siteId );
 			const phpService = lightningServices.getSiteServiceByRole(
 				site as unknown as Local.Site,
 				Local.SiteServiceRole.PHP,
 			);
 
-			const onLog = (msg: string) => {
-				logger.info(msg);
-				LocalMain.sendIPCEvent(IPC_CHANNELS.PROFILER_SETUP_LOG, siteId, msg);
+			const onLog = ( msg: string ) => {
+				logger.info( msg );
+				LocalMain.sendIPCEvent( IPC_CHANNELS.PROFILER_SETUP_LOG, siteId, msg );
 			};
 
 			let xhprofResult: ProfilerSetupStatus['xhprof'] = { status: 'missing' };
@@ -136,34 +137,34 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 			let muPluginResult: ProfilerSetupStatus['muPlugin'] = { status: 'missing' };
 
 			// -- xhprof setup --
-			if (!phpService) {
+			if ( ! phpService ) {
 				xhprofResult = { status: 'error', error: 'PHP service not found for this site' };
-				onLog('Error: PHP service not found');
-			} else if (process.platform === 'win32') {
+				onLog( 'Error: PHP service not found' );
+			} else if ( process.platform === 'win32' ) {
 				xhprofResult = { status: 'error', error: 'xhprof compilation requires macOS or Linux' };
-				onLog('Skipping xhprof: compilation not supported on Windows');
+				onLog( 'Skipping xhprof: compilation not supported on Windows' );
 			} else {
 				const phpVersion = phpService.binVersion;
-				const { php, phpize, phpConfig } = getPhpBins(phpService);
-				const phpPrefix = path.dirname(path.dirname(phpize));
+				const { phpize, phpConfig } = getPhpBins( phpService );
+				const phpPrefix = path.dirname( path.dirname( phpize ) );
 				const env = {
 					...process.env,
-					PATH: `${phpService.$PATH ?? ''}${path.delimiter}${process.env.PATH ?? ''}`,
+					PATH: `${ phpService.$PATH ?? '' }${ path.delimiter }${ process.env.PATH ?? '' }`,
 				};
 
 				try {
 					// Step 1: Compile if not cached
-					if (checkXhprofCached(phpVersion)) {
-						onLog(`xhprof.so already cached for PHP ${phpVersion}`);
+					if ( checkXhprofCached( phpVersion ) ) {
+						onLog( `xhprof.so already cached for PHP ${ phpVersion }` );
 					} else {
-						await ensureXhprofSource(onLog);
-						await compileXhprof(phpVersion, phpize, phpConfig, env, onLog);
+						await ensureXhprofSource( onLog );
+						await compileXhprof( phpVersion, phpize, phpConfig, env, onLog );
 					}
 
 					// Step 2: Copy .so to extension dir and update php.ini.hbs
-					const extDir = await findExtensionDir(phpPrefix);
-					if (!extDir) {
-						throw new Error('Could not find PHP extension directory');
+					const extDir = await findExtensionDir( phpPrefix );
+					if ( ! extDir ) {
+						throw new Error( 'Could not find PHP extension directory' );
 					}
 
 					await installXhprofExtension(
@@ -174,64 +175,64 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 					);
 
 					// Step 3: Restart PHP to load the extension
-					onLog('Restarting PHP service...');
+					onLog( 'Restarting PHP service...' );
 					await siteProcessManager.restartSiteService(
 						site as unknown as Local.Site,
 						'php',
 					);
-					onLog('PHP service restarted');
+					onLog( 'PHP service restarted' );
 
 					// Step 4: Verify
-					xhprofResult = await verifyXhprofInstalled(extDir, site as unknown as Local.Site);
-					if (xhprofResult.status === 'ready') {
-						onLog('xhprof installed and configured');
+					xhprofResult = await verifyXhprofInstalled( extDir, site as unknown as Local.Site );
+					if ( xhprofResult.status === 'ready' ) {
+						onLog( 'xhprof installed and configured' );
 					} else {
-						onLog(`xhprof verification failed: ${xhprofResult.error}`);
+						onLog( `xhprof verification failed: ${ xhprofResult.error }` );
 					}
-				} catch (e: any) {
+				} catch ( e: any ) {
 					xhprofResult = { status: 'error', error: e.message };
-					onLog(`xhprof setup failed: ${e.message}`);
-					logger.warn(`xhprof setup failed for site ${siteId}: ${e.message}`);
+					onLog( `xhprof setup failed: ${ e.message }` );
+					logger.warn( `xhprof setup failed for site ${ siteId }: ${ e.message }` );
 				}
 			}
 
 			// -- k6 setup --
 			try {
 				const k6Check = await checkK6Installed();
-				if (k6Check.status === 'ready') {
-					onLog(`k6 already installed (${k6Check.version})`);
+				if ( k6Check.status === 'ready' ) {
+					onLog( `k6 already installed (${ k6Check.version })` );
 					k6Result = k6Check;
 				} else {
-					await downloadAndInstallK6(onLog);
+					await downloadAndInstallK6( onLog );
 					k6Result = await checkK6Installed();
-					if (k6Result.status === 'ready') {
-						onLog(`k6 ${k6Result.version} installed`);
+					if ( k6Result.status === 'ready' ) {
+						onLog( `k6 ${ k6Result.version } installed` );
 					} else {
-						onLog(`k6 verification failed: ${k6Result.error}`);
+						onLog( `k6 verification failed: ${ k6Result.error }` );
 					}
 				}
-			} catch (e: any) {
+			} catch ( e: any ) {
 				k6Result = { status: 'error', error: e.message };
-				onLog(`k6 setup failed: ${e.message}`);
-				logger.warn(`k6 setup failed for site ${siteId}: ${e.message}`);
+				onLog( `k6 setup failed: ${ e.message }` );
+				logger.warn( `k6 setup failed for site ${ siteId }: ${ e.message }` );
 			}
 
 			// -- mu-plugin setup --
 			try {
-				await deployMuPlugin(site as unknown as Local.Site, onLog);
+				await deployMuPlugin( site as unknown as Local.Site, onLog );
 				muPluginResult = { status: 'ready', version: 'installed' };
-			} catch (e: any) {
+			} catch ( e: any ) {
 				muPluginResult = { status: 'error', error: e.message };
-				onLog(`mu-plugin setup failed: ${e.message}`);
-				logger.warn(`mu-plugin setup failed for site ${siteId}: ${e.message}`);
+				onLog( `mu-plugin setup failed: ${ e.message }` );
+				logger.warn( `mu-plugin setup failed for site ${ siteId }: ${ e.message }` );
 			}
 
 			// -- CLI command setup --
 			try {
-				await deployCliCommand(onLog);
-			} catch (e: any) {
-				onLog(`CLI setup warning: ${e.message}`);
-				logger.warn(`CLI setup failed for site ${siteId}: ${e.message}`);
+				await deployCliCommand( onLog );
+			} catch ( e: any ) {
+				onLog( `CLI setup warning: ${ e.message }` );
+				logger.warn( `CLI setup failed for site ${ siteId }: ${ e.message }` );
 			}
 
 			const status: ProfilerSetupStatus = {
@@ -242,15 +243,15 @@ export function registerProfilerSetupIpc(deps: ProfilerSetupIpcDeps): void {
 
 			// Persist setup state
 			const phpVersion = phpService?.binVersion;
-			const allReady = xhprofResult.status === 'ready'
-				&& k6Result.status === 'ready'
-				&& muPluginResult.status === 'ready';
-			writeProfilerCache(siteData, siteId, {
+			const allReady = xhprofResult.status === 'ready' &&
+				k6Result.status === 'ready' &&
+				muPluginResult.status === 'ready';
+			writeProfilerCache( siteData, siteId, {
 				setupCompleted: allReady,
 				phpVersion,
-			});
+			} );
 
-			LocalMain.sendIPCEvent(IPC_CHANNELS.PROFILER_SETUP_COMPLETED, siteId, status);
+			LocalMain.sendIPCEvent( IPC_CHANNELS.PROFILER_SETUP_COMPLETED, siteId, status );
 			return status;
 		},
 	);

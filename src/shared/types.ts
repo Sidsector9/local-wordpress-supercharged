@@ -3,7 +3,7 @@
  * the main and renderer processes.
  */
 
-export const DEBUG_CONSTANTS = ['WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG'] as const;
+export const DEBUG_CONSTANTS = [ 'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG' ] as const;
 export type DebugConstantName = typeof DEBUG_CONSTANTS[number];
 export type DebugConstantsMap = Record<DebugConstantName, boolean>;
 
@@ -60,7 +60,7 @@ export const FEATURE_FLAGS = {
 	PROFILER: false,
 } as const;
 
-export const NGROK_CONSTANTS = ['WP_HOME', 'WP_SITEURL'] as const;
+export const NGROK_CONSTANTS = [ 'WP_HOME', 'WP_SITEURL' ] as const;
 
 export const IPC_CHANNELS = {
 	GET_DEBUG_CONSTANTS: 'supercharged:get-debug-constants',

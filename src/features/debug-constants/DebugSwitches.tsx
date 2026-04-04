@@ -17,90 +17,90 @@ import {
 	IPC_CHANNELS,
 } from '../../shared/types';
 
-let React: typeof import('react');
+let React: typeof import( 'react' );
 
 interface DebugSwitchesProps {
 	site: { id: string };
 }
 
 export function registerDebugConstantsHooks(
-	_React: typeof import('react'),
+	_React: typeof import( 'react' ),
 	hooks: typeof LocalRenderer.HooksRenderer,
 ): void {
 	React = _React;
 
-	hooks.addContent('SiteInfoOverview_TableList', (site) => (
-		<DebugSwitches key="wordpress-supercharged-debug" site={site} />
-	));
+	hooks.addContent( 'SiteInfoOverview_TableList', ( site ) => (
+		<DebugSwitches key="wordpress-supercharged-debug" site={ site } />
+	) );
 }
 
-function DebugSwitches({ site }: DebugSwitchesProps) {
+function DebugSwitches( { site }: DebugSwitchesProps ) {
 	const { useState, useEffect, useCallback } = React;
 
-	const [constants, setConstants] = useState<DebugConstantsMap>(DEFAULT_DEBUG_STATE);
-	const [loading, setLoading] = useState(true);
-	const [updating, setUpdating] = useState<Record<string, boolean>>({});
+	const [ constants, setConstants ] = useState<DebugConstantsMap>( DEFAULT_DEBUG_STATE );
+	const [ loading, setLoading ] = useState( true );
+	const [ updating, setUpdating ] = useState<Record<string, boolean>>( {} );
 
-	useEffect(() => {
-		LocalRenderer.ipcAsync(IPC_CHANNELS.GET_DEBUG_CONSTANTS, site.id)
-			.then((result: DebugConstantsMap) => setConstants(result))
-			.catch(() => setConstants(DEFAULT_DEBUG_STATE))
-			.finally(() => setLoading(false));
+	useEffect( () => {
+		LocalRenderer.ipcAsync( IPC_CHANNELS.GET_DEBUG_CONSTANTS, site.id )
+			.then( ( result: DebugConstantsMap ) => setConstants( result ) )
+			.catch( () => setConstants( DEFAULT_DEBUG_STATE ) )
+			.finally( () => setLoading( false ) );
 
-		LocalRenderer.ipcAsync(IPC_CHANNELS.WATCH_SITE, site.id);
+		LocalRenderer.ipcAsync( IPC_CHANNELS.WATCH_SITE, site.id );
 
-		const handleExternalChange = (_event: any, siteId: string, updated: DebugConstantsMap) => {
-			if (siteId === site.id) {
-				setConstants(updated);
+		const handleExternalChange = ( _event: any, siteId: string, updated: DebugConstantsMap ) => {
+			if ( siteId === site.id ) {
+				setConstants( updated );
 			}
 		};
 
-		ipcRenderer.on(IPC_CHANNELS.DEBUG_CONSTANTS_CHANGED, handleExternalChange);
+		ipcRenderer.on( IPC_CHANNELS.DEBUG_CONSTANTS_CHANGED, handleExternalChange );
 
 		return () => {
-			ipcRenderer.removeListener(IPC_CHANNELS.DEBUG_CONSTANTS_CHANGED, handleExternalChange);
-			LocalRenderer.ipcAsync(IPC_CHANNELS.UNWATCH_SITE, site.id);
+			ipcRenderer.removeListener( IPC_CHANNELS.DEBUG_CONSTANTS_CHANGED, handleExternalChange );
+			LocalRenderer.ipcAsync( IPC_CHANNELS.UNWATCH_SITE, site.id );
 		};
-	}, [site.id]);
+	}, [ site.id ] );
 
 	const handleToggle = useCallback(
-		async (name: string, value: boolean) => {
-			const previous = constants[name as DebugConstantName];
-			setConstants((prev) => ({ ...prev, [name]: value }));
-			setUpdating((prev) => ({ ...prev, [name]: true }));
+		async ( name: string, value: boolean ) => {
+			const previous = constants[ name as DebugConstantName ];
+			setConstants( ( prev ) => ( { ...prev, [ name ]: value } ) );
+			setUpdating( ( prev ) => ( { ...prev, [ name ]: true } ) );
 
 			try {
-				const result = await LocalRenderer.ipcAsync(IPC_CHANNELS.SET_DEBUG_CONSTANT, site.id, name, value);
-				if (result?.constants) {
-					setConstants(result.constants);
+				const result = await LocalRenderer.ipcAsync( IPC_CHANNELS.SET_DEBUG_CONSTANT, site.id, name, value );
+				if ( result?.constants ) {
+					setConstants( result.constants );
 				}
-			} catch (e) {
-				setConstants((prev) => ({ ...prev, [name]: previous }));
+			} catch ( e ) {
+				setConstants( ( prev ) => ( { ...prev, [ name ]: previous } ) );
 			} finally {
-				setUpdating((prev) => ({ ...prev, [name]: false }));
+				setUpdating( ( prev ) => ( { ...prev, [ name ]: false } ) );
 			}
 		},
-		[site.id, constants],
+		[ site.id, constants ],
 	);
 
-	if (loading) {
+	if ( loading ) {
 		return null;
 	}
 
 	return (
 		<>
-			{DEBUG_CONSTANTS.map((constant) => (
-				<TableListRow key={constant} label={constant} alignMiddle>
+			{ DEBUG_CONSTANTS.map( ( constant ) => (
+				<TableListRow key={ constant } label={ constant } alignMiddle>
 					<Switch
-						tiny={true}
-						flat={true}
-						disabled={!!updating[constant]}
-						name={constant}
-						checked={constants[constant]}
-						onChange={handleToggle}
+						tiny={ true }
+						flat={ true }
+						disabled={ !! updating[ constant ] }
+						name={ constant }
+						checked={ constants[ constant ] }
+						onChange={ handleToggle }
 					/>
 				</TableListRow>
-			))}
+			) ) }
 		</>
 	);
 }

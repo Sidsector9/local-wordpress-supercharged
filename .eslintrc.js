@@ -1,7 +1,5 @@
 module.exports = {
-	extends: ['plugin:@typescript-eslint/recommended', '@getflywheel/eslint-config-local'],
-	parser: '@typescript-eslint/parser',
-	plugins: ['@typescript-eslint'],
+	extends: ['plugin:@wordpress/eslint-plugin/recommended'],
 	root: true,
 	rules: {
 		'import/no-unresolved': [
@@ -9,23 +7,19 @@ module.exports = {
 			{
 				ignore: [
 					/**
-					 * Ignore @getflywheel/local import paths since this modules is injected at runtime
-					 * import/no-unresolved cannot check that these resolve correctly since it can only check what
-					 * is on disk statically without taking any runtime specific things into account
+					 * Ignore @getflywheel/local and electron import paths since these
+					 * modules are injected at runtime by the Local Electron host.
 					 */
 					'@getflywheel/local',
+					'electron',
 				],
 			},
 		],
-		'func-style': 'off',
 		/**
-		 * The stock no-use-before-define rule is incompatible with TS. The solution is to disable it and then
-		 * enable a similar rule designed for TS
-		 *
-		 * https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-use-before-define.md#how-to-use
+		 * electron is provided by the Local Electron host at runtime
+		 * and should not be listed as a project dependency.
 		 */
-		'no-use-before-define': 'off',
-		'@typescript-eslint/no-use-before-define': [1],
+		'import/no-extraneous-dependencies': 'off',
 	},
 	settings: {
 		'import/resolver': {

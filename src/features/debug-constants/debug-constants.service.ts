@@ -9,14 +9,17 @@ import * as Local from '@getflywheel/local';
 import * as LocalMain from '@getflywheel/local/main';
 import { CACHE_VERSION, DEBUG_CONSTANTS, DebugConstantName, DebugConstantsMap, SuperchargedCache, WP_DEFAULTS } from '../../shared/types';
 
-export function getWpConfigPath(site: Local.Site): string {
-	return path.join(site.paths.webRoot, 'wp-config.php');
+export function getWpConfigPath( site: Local.Site ): string {
+	return path.join( site.paths.webRoot, 'wp-config.php' );
 }
 
-/** Returns wp-config.php mtime in ms, or 0 if unreadable. Used for cache invalidation. */
-export function getWpConfigMtime(site: Local.Site): number {
+/**
+ * Returns wp-config.php mtime in ms, or 0 if unreadable. Used for cache invalidation.
+ * @param site
+ */
+export function getWpConfigMtime( site: Local.Site ): number {
 	try {
-		return fs.statSync(getWpConfigPath(site)).mtimeMs;
+		return fs.statSync( getWpConfigPath( site ) ).mtimeMs;
 	} catch {
 		return 0;
 	}
@@ -27,6 +30,8 @@ export function getWpConfigMtime(site: Local.Site): number {
  *
  * WP-CLI returns "1" for true, "" for false, throws for undefined.
  * Falls back to WP_DEFAULTS when a constant is not defined.
+ * @param wpCli
+ * @param site
  */
 export async function fetchDebugConstants(
 	wpCli: LocalMain.Services.WpCli,
@@ -34,12 +39,12 @@ export async function fetchDebugConstants(
 ): Promise<DebugConstantsMap> {
 	const results = {} as DebugConstantsMap;
 
-	for (const constant of DEBUG_CONSTANTS) {
+	for ( const constant of DEBUG_CONSTANTS ) {
 		try {
-			const value = await wpCli.run(site, ['config', 'get', constant, `--path=${site.path}`]);
-			results[constant] = value?.trim() === '1' || value?.trim().toLowerCase() === 'true';
-		} catch (e) {
-			results[constant] = WP_DEFAULTS[constant as DebugConstantName];
+			const value = await wpCli.run( site, [ 'config', 'get', constant, `--path=${ site.path }` ] );
+			results[ constant ] = value?.trim() === '1' || value?.trim().toLowerCase() === 'true';
+		} catch ( e ) {
+			results[ constant ] = WP_DEFAULTS[ constant as DebugConstantName ];
 		}
 	}
 
@@ -53,7 +58,7 @@ export async function setDebugConstant(
 	value: boolean,
 ): Promise<void> {
 	const wpValue = value ? 'true' : 'false';
-	await wpCli.run(site, ['config', 'set', constant, wpValue, '--raw', '--add', `--path=${site.path}`]);
+	await wpCli.run( site, [ 'config', 'set', constant, wpValue, '--raw', '--add', `--path=${ site.path }` ] );
 }
 
 export async function isConstantDefined(
@@ -62,7 +67,7 @@ export async function isConstantDefined(
 	constant: string,
 ): Promise<boolean> {
 	try {
-		await wpCli.run(site, ['config', 'get', constant, `--path=${site.path}`]);
+		await wpCli.run( site, [ 'config', 'get', constant, `--path=${ site.path }` ] );
 		return true;
 	} catch {
 		return false;
@@ -74,11 +79,11 @@ export async function deleteConstant(
 	site: Local.Site,
 	constant: string,
 ): Promise<void> {
-	await wpCli.run(site, ['config', 'delete', constant, `--path=${site.path}`]);
+	await wpCli.run( site, [ 'config', 'delete', constant, `--path=${ site.path }` ] );
 }
 
-export function readCache(site: Local.Site): SuperchargedCache | undefined {
-	return (site as any).superchargedAddon as SuperchargedCache | undefined;
+export function readCache( site: Local.Site ): SuperchargedCache | undefined {
+	return ( site as any ).superchargedAddon as SuperchargedCache | undefined;
 }
 
 export function writeCache(
@@ -86,10 +91,10 @@ export function writeCache(
 	siteId: string,
 	cache: DebugConstantsMap,
 ): void {
-	const site = siteData.getSite(siteId);
-	const existing = (site as any)?.superchargedAddon || {};
+	const site = siteData.getSite( siteId );
+	const existing = ( site as any )?.superchargedAddon || {};
 
-	siteData.updateSite(siteId, {
+	siteData.updateSite( siteId, {
 		id: siteId,
 		superchargedAddon: {
 			...existing,
@@ -97,5 +102,5 @@ export function writeCache(
 			cachedAt: Date.now(),
 			cacheVersion: CACHE_VERSION,
 		},
-	} as Partial<Local.SiteJSON>);
+	} as Partial<Local.SiteJSON> );
 }

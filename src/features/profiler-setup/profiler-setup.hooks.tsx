@@ -22,14 +22,14 @@ import { createProfilerSetupPanel } from './ProfilerSetupPanel';
  * @param hooks -- The HooksRenderer class from Local's addon context.
  */
 export function registerProfilerSetupHooks(
-	React: typeof import('react'),
+	React: typeof import( 'react' ),
 	hooks: typeof LocalRenderer.HooksRenderer,
 ): void {
-	const ProfilerSetupPanel = createProfilerSetupPanel(React);
+	const ProfilerSetupPanel = createProfilerSetupPanel( React );
 
-	hooks.addContent('siteInfoUtilities', (site) => (
+	hooks.addContent( 'siteInfoUtilities', ( site ) => (
 		<TableListRow key="wordpress-supercharged-profiler" label="Profiler">
-			<ProfilerSetupPanel site={site} />
+			<ProfilerSetupPanel site={ site } />
 		</TableListRow>
-	));
+	) );
 }

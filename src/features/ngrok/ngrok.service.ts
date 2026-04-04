@@ -12,8 +12,8 @@ export async function setNgrokConstants(
 	site: Local.Site,
 	url: string,
 ): Promise<void> {
-	for (const constant of NGROK_CONSTANTS) {
-		await wpCli.run(site, ['config', 'set', constant, url, '--add', `--path=${site.path}`]);
+	for ( const constant of NGROK_CONSTANTS ) {
+		await wpCli.run( site, [ 'config', 'set', constant, url, '--add', `--path=${ site.path }` ] );
 	}
 }
 
@@ -21,17 +21,17 @@ export async function removeNgrokConstants(
 	wpCli: LocalMain.Services.WpCli,
 	site: Local.Site,
 ): Promise<void> {
-	for (const constant of NGROK_CONSTANTS) {
+	for ( const constant of NGROK_CONSTANTS ) {
 		try {
-			await wpCli.run(site, ['config', 'delete', constant, `--path=${site.path}`]);
+			await wpCli.run( site, [ 'config', 'delete', constant, `--path=${ site.path }` ] );
 		} catch {
 			// Constant may not exist
 		}
 	}
 }
 
-export function readNgrokCache(site: Local.Site): NgrokCache | undefined {
-	const cache = (site as any).superchargedAddon as SuperchargedCache | undefined;
+export function readNgrokCache( site: Local.Site ): NgrokCache | undefined {
+	const cache = ( site as any ).superchargedAddon as SuperchargedCache | undefined;
 	return cache?.ngrok;
 }
 
@@ -40,33 +40,38 @@ export function writeNgrokCache(
 	siteId: string,
 	ngrok: NgrokCache,
 ): void {
-	const site = siteData.getSite(siteId);
-	const existing = (site as any)?.superchargedAddon || {};
+	const site = siteData.getSite( siteId );
+	const existing = ( site as any )?.superchargedAddon || {};
 
-	siteData.updateSite(siteId, {
+	siteData.updateSite( siteId, {
 		id: siteId,
 		superchargedAddon: {
 			...existing,
 			ngrok,
 		},
-	} as Partial<Local.SiteJSON>);
+	} as Partial<Local.SiteJSON> );
 }
 
 export function clearNgrokCache(
 	siteData: LocalMain.Services.SiteDataService,
 	siteId: string,
 ): void {
-	const site = siteData.getSite(siteId);
-	const existing = (site as any)?.superchargedAddon || {};
+	const site = siteData.getSite( siteId );
+	const existing = ( site as any )?.superchargedAddon || {};
 	const { ngrok: _removed, ...rest } = existing;
 
-	siteData.updateSite(siteId, {
+	siteData.updateSite( siteId, {
 		id: siteId,
 		superchargedAddon: rest,
-	} as Partial<Local.SiteJSON>);
+	} as Partial<Local.SiteJSON> );
 }
 
-/** Finds all sites that have the same ngrok URL enabled, excluding the given site. */
+/**
+ * Finds all sites that have the same ngrok URL enabled, excluding the given site.
+ * @param siteData
+ * @param url
+ * @param excludeSiteId
+ */
 export function findConflictingSites(
 	siteData: LocalMain.Services.SiteDataService,
 	url: string,
@@ -75,15 +80,15 @@ export function findConflictingSites(
 	const sites = siteData.getSites();
 	const conflicting: string[] = [];
 
-	for (const siteId of Object.keys(sites)) {
-		if (siteId === excludeSiteId) {
+	for ( const siteId of Object.keys( sites ) ) {
+		if ( siteId === excludeSiteId ) {
 			continue;
 		}
 
-		const ngrok = readNgrokCache(sites[siteId] as unknown as Local.Site);
+		const ngrok = readNgrokCache( sites[ siteId ] as unknown as Local.Site );
 
-		if (ngrok?.enabled && ngrok.url === url) {
-			conflicting.push(siteId);
+		if ( ngrok?.enabled && ngrok.url === url ) {
+			conflicting.push( siteId );
 		}
 	}
 

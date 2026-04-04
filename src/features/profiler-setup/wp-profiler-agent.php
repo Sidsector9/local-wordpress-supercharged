@@ -216,6 +216,7 @@ register_shutdown_function(function () {
 		'calls'      => $calls,
 		'query_log'  => $query_log,
 		'profile'    => $profile_data,
+		'file_map'   => $file_map,
 	);
 
 	// Write to wp-content/profiler-runs/{run_id}/{request_id}.json

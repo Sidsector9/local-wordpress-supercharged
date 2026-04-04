@@ -9,19 +9,20 @@ import * as Local from '@getflywheel/local';
 
 /**
  * Creates a mock Local.Site object with sensible defaults.
+ * @param overrides
  */
-export function createMockSite(overrides: Partial<{
+export function createMockSite( overrides: Partial<{
 	id: string;
 	path: string;
 	webRoot: string;
 	conf: string;
 	confTemplates: string;
 	superchargedAddon: any;
-}> = {}): Local.Site {
+}> = {} ): Local.Site {
 	const id = overrides.id ?? 'test-site-id';
 	const sitePath = overrides.path ?? '/Users/Local Sites/test-site';
-	const webRoot = overrides.webRoot ?? `${sitePath}/app/public`;
-	const conf = overrides.conf ?? `${sitePath}/conf`;
+	const webRoot = overrides.webRoot ?? `${ sitePath }/app/public`;
+	const conf = overrides.conf ?? `${ sitePath }/conf`;
 	const confTemplates = overrides.confTemplates ?? conf;
 
 	const site: any = {
@@ -34,7 +35,7 @@ export function createMockSite(overrides: Partial<{
 		},
 	};
 
-	if (overrides.superchargedAddon !== undefined) {
+	if ( overrides.superchargedAddon !== undefined ) {
 		site.superchargedAddon = overrides.superchargedAddon;
 	}
 
@@ -52,11 +53,12 @@ export function createMockWpCli() {
 
 /**
  * Creates a mock SiteDataService with jest.fn() methods.
+ * @param defaultSite
  */
-export function createMockSiteData(defaultSite?: Local.Site) {
+export function createMockSiteData( defaultSite?: Local.Site ) {
 	return {
-		getSite: jest.fn((siteId: string) => defaultSite ?? createMockSite({ id: siteId })),
-		getSites: jest.fn(() => ({})),
+		getSite: jest.fn( ( siteId: string ) => defaultSite ?? createMockSite( { id: siteId } ) ),
+		getSites: jest.fn( () => ( {} ) ),
 		updateSite: jest.fn(),
 	};
 }
@@ -73,13 +75,14 @@ export function createMockLogger() {
 
 /**
  * Creates a mock LightningService with PHP binary paths and environment.
+ * @param overrides
  */
-export function createMockLightningService(overrides: Partial<{
+export function createMockLightningService( overrides: Partial<{
 	bin: Record<string, string>;
 	$PATH: string;
 	binVersion: string;
 	env: NodeJS.ProcessEnv;
-}> = {}) {
+}> = {} ) {
 	return {
 		bin: overrides.bin ?? {
 			php: '/opt/local/lightning-services/php-8.2.0/bin/php',
@@ -96,10 +99,11 @@ export function createMockLightningService(overrides: Partial<{
 
 /**
  * Creates a mock LightningServices service with jest.fn() methods.
+ * @param defaultService
  */
-export function createMockLightningServices(defaultService?: ReturnType<typeof createMockLightningService>) {
+export function createMockLightningServices( defaultService?: ReturnType<typeof createMockLightningService> ) {
 	return {
-		getSiteServiceByRole: jest.fn(() => defaultService ?? createMockLightningService()),
+		getSiteServiceByRole: jest.fn( () => defaultService ?? createMockLightningService() ),
 	};
 }
 
@@ -108,7 +112,7 @@ export function createMockLightningServices(defaultService?: ReturnType<typeof c
  */
 export function createMockSiteProcessManager() {
 	return {
-		restart: jest.fn().mockResolvedValue(undefined),
-		restartSiteService: jest.fn().mockResolvedValue(undefined),
+		restart: jest.fn().mockResolvedValue( undefined ),
+		restartSiteService: jest.fn().mockResolvedValue( undefined ),
 	};
 }
