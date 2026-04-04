@@ -1,10 +1,5 @@
 /**
- * main.ts -- Main Process Entry Point for the WordPress Supercharged Addon
- *
- * This is a thin wiring shell. It extracts dependencies from Local's service
- * container and delegates to feature-specific registration functions.
- *
- * To add a new feature, import its registration function and call it here.
+ * main.ts -- Main Process Entry Point
  */
 
 import * as LocalMain from '@getflywheel/local/main';
@@ -31,6 +26,7 @@ export default function (context: LocalMain.AddonMainContext): void {
 	}
 	registerConflictTestIpc({ wpCli, siteData, logger });
 
+	// Auto-cleanup ngrok when a site is stopped
 	context.hooks.addAction('siteStopped', (site: any) => {
 		const cached = readNgrokCache(site);
 		if (cached?.enabled) {

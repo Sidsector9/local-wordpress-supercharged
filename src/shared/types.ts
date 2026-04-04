@@ -1,47 +1,15 @@
 /**
  * shared/types.ts -- Types, constants, and IPC channel names shared between
  * the main and renderer processes.
- *
- * This module is the single source of truth for data shapes and identifiers
- * used across process boundaries. Both main.ts and renderer.tsx import from
- * here, eliminating duplication and ensuring IPC contracts stay in sync.
  */
 
-/**
- * The three WordPress debug constants this addon manages.
- * Defined as a const tuple so it can be iterated and used as a type union.
- */
 export const DEBUG_CONSTANTS = ['WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG'] as const;
-
-/**
- * Union type of the debug constant names.
- */
 export type DebugConstantName = typeof DEBUG_CONSTANTS[number];
-
-/**
- * A map of constant names to their boolean values.
- * Used as the return shape from fetching, the cache shape, and the renderer state.
- */
 export type DebugConstantsMap = Record<DebugConstantName, boolean>;
 
-/**
- * Current cache format version. Bumped when the shape or semantics of cached
- * data change in a way that makes old caches unreliable. Caches written with
- * an older (or missing) version are treated as stale and re-fetched.
- */
+/** Bumped when cache shape changes to invalidate old caches. */
 export const CACHE_VERSION = 4;
 
-/**
- * The shape of the data persisted on the SiteJSON object under the
- * `superchargedAddon` key via `siteData.updateSite()`.
- *
- * @property debugConstants -- The cached boolean values for each debug constant.
- * @property cachedAt       -- Unix timestamp (ms) of when the cache was last written.
- *                            Compared against wp-config.php's mtime to detect
- *                            external modifications and invalidate stale caches.
- * @property cacheVersion   -- Format version. Caches missing this field or with
- *                            an older version are invalidated on read.
- */
 export interface SuperchargedCache {
 	debugConstants: DebugConstantsMap;
 	cachedAt: number;
@@ -50,42 +18,24 @@ export interface SuperchargedCache {
 	profiler?: ProfilerCache;
 }
 
-/**
- * Persisted ngrok state for a site, stored under `superchargedAddon.ngrok`.
- */
 export interface NgrokCache {
 	enabled: boolean;
 	url: string;
 }
 
-/**
- * Persisted profiler setup state for a site, stored under
- * `superchargedAddon.profiler`.
- */
 export interface ProfilerCache {
 	setupCompleted: boolean;
 	phpVersion?: string;
 }
 
-/**
- * Status of an individual profiler tool.
- * 'ready' = installed and verified, 'missing' = not installed,
- * 'error' = install attempted but failed.
- */
 export type ToolStatus = 'ready' | 'missing' | 'error';
 
-/**
- * Per-tool installation result with optional version and error info.
- */
 export interface ToolCheckResult {
 	status: ToolStatus;
 	version?: string;
 	error?: string;
 }
 
-/**
- * Aggregate profiler setup status returned by GET_PROFILER_STATUS.
- */
 export interface ProfilerSetupStatus {
 	xhprof: ToolCheckResult;
 	k6: ToolCheckResult;
@@ -94,13 +44,7 @@ export interface ProfilerSetupStatus {
 
 /**
  * WordPress core runtime defaults for each debug constant.
- * Used by fetchDebugConstants as the fallback when a constant
- * is not explicitly defined in wp-config.php.
- *
- * Per wp-settings.php:
- *   - WP_DEBUG defaults to false
- *   - WP_DEBUG_LOG defaults to false
- *   - WP_DEBUG_DISPLAY defaults to true
+ * WP_DEBUG_DISPLAY defaults to true in wp-settings.php; the rest default to false.
  */
 export const WP_DEFAULTS: DebugConstantsMap = {
 	WP_DEBUG: false,
@@ -109,26 +53,13 @@ export const WP_DEFAULTS: DebugConstantsMap = {
 	SCRIPT_DEBUG: false,
 };
 
-/**
- * Default state: used as the initial renderer state and as a
- * fallback when fetching fails. Matches WP core defaults.
- */
 export const DEFAULT_DEBUG_STATE: DebugConstantsMap = { ...WP_DEFAULTS };
 
-/**
- * Feature flags. Set to true to enable a feature, false to hide it.
- * No code is removed -- the feature is just not registered.
- */
+/** Feature flags. Set to true to enable, false to hide (code stays in place). */
 export const FEATURE_FLAGS = {
 	PROFILER: false,
 } as const;
 
-/**
- * IPC channel names, centralized to avoid typos and enable find-all-references.
- *
- * Channels prefixed with `supercharged:` to namespace them and avoid
- * collisions with other addons.
- */
 export const NGROK_CONSTANTS = ['WP_HOME', 'WP_SITEURL'] as const;
 
 export const IPC_CHANNELS = {
@@ -156,9 +87,6 @@ export const IPC_CHANNELS = {
 	CLEAR_CONFLICT_OVERRIDES: 'supercharged:clear-conflict-overrides',
 } as const;
 
-/**
- * A WordPress plugin as returned by WP-CLI.
- */
 export interface PluginInfo {
 	name: string;
 	status: 'active' | 'inactive';
@@ -166,16 +94,10 @@ export interface PluginInfo {
 	file: string;
 }
 
-/**
- * Override config stored at wp-content/conflict-test-overrides.json.
- * Keys are plugin basenames, values are the desired active state.
- */
+/** Keys are plugin basenames, values are the desired active state. */
 export interface ConflictOverrides {
 	overrides: Record<string, boolean>;
 }
 
-/**
- * Plugin dependency map. Key is plugin file (e.g. "google-listings-and-ads/google-listings-and-ads.php"),
- * value is comma-separated slug list of required plugins (e.g. "woocommerce").
- */
+/** Key is plugin file, value is comma-separated slug list of required plugins. */
 export type PluginDependencyMap = Record<string, string>;

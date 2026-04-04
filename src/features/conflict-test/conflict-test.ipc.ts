@@ -1,11 +1,5 @@
 /**
  * conflict-test.ipc.ts -- IPC handler registration for the conflict testing feature.
- *
- * Channels:
- *   - GET_PLUGIN_LIST:          Fetch all plugins + dependencies via WP-CLI
- *   - GET_CONFLICT_OVERRIDES:   Read current override config
- *   - SET_CONFLICT_OVERRIDE:    Set a single plugin override (with cascade)
- *   - CLEAR_CONFLICT_OVERRIDES: Clear all overrides
  */
 
 import * as Local from '@getflywheel/local';
@@ -21,28 +15,19 @@ import {
 	deployConflictTesterMuPlugin,
 } from './conflict-test.service';
 
-/**
- * Dependencies required by the conflict test IPC handlers.
- */
 export interface ConflictTestIpcDeps {
 	wpCli: LocalMain.Services.WpCli;
 	siteData: LocalMain.Services.SiteDataService;
 	logger: { info: (msg: string) => void; warn: (msg: string) => void };
 }
 
-/**
- * Registers all conflict-test-related IPC listeners on the main process.
- */
 export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 	const { wpCli, siteData, logger } = deps;
 
-	// Cache dependencies per site to avoid repeated WP-CLI calls
+	// Per-site caches to avoid repeated WP-CLI calls
 	const depsCache: Record<string, PluginDependencyMap> = {};
 	const pluginsCache: Record<string, PluginInfo[]> = {};
 
-	/**
-	 * GET_PLUGIN_LIST -- Returns plugins + dependencies in one call.
-	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_PLUGIN_LIST,
 		async (siteId: string): Promise<{ plugins: PluginInfo[]; dependencies: PluginDependencyMap }> => {
@@ -62,15 +47,11 @@ export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 		},
 	);
 
-	/**
-	 * GET_CONFLICT_OVERRIDES -- Returns the current override config.
-	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_CONFLICT_OVERRIDES,
 		async (siteId: string): Promise<ConflictOverrides> => {
 			const site = siteData.getSite(siteId);
 
-			// Ensure mu-plugin is deployed
 			try {
 				await deployConflictTesterMuPlugin(site as unknown as Local.Site);
 			} catch (e: any) {
@@ -81,10 +62,8 @@ export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 		},
 	);
 
-	/**
-	 * SET_CONFLICT_OVERRIDE -- Sets a plugin override with cascade.
-	 * When deactivating a plugin, also deactivates all plugins that depend on it.
-	 */
+	// SET_CONFLICT_OVERRIDE -- Sets a plugin override with cascade.
+	// Deactivating cascades down to dependents; activating cascades up to requirements.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.SET_CONFLICT_OVERRIDE,
 		async (siteId: string, pluginFile: string, active: boolean, dbStatus: 'active' | 'inactive'): Promise<ConflictOverrides> => {
@@ -92,12 +71,10 @@ export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 			const deps = depsCache[siteId] || {};
 			const plugins = pluginsCache[siteId] || [];
 
-			// Set the override for the target plugin
 			writeOverride(site, pluginFile, active, dbStatus);
 			logger.info(`Conflict override: ${pluginFile} -> ${active ? 'active' : 'inactive'} (DB: ${dbStatus})`);
 
 			if (!active) {
-				// Cascade down: deactivating a plugin also deactivates its dependents
 				const dependents = getDependentPlugins(pluginFile, deps, plugins);
 				for (const depFile of dependents) {
 					const depPlugin = plugins.find(p => p.file === depFile);
@@ -107,7 +84,6 @@ export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 					}
 				}
 			} else {
-				// Cascade up: activating a plugin also activates its requirements
 				const requires = deps[pluginFile];
 				if (requires) {
 					const requiredSlugs = requires.split(',').map(s => s.trim());
@@ -125,9 +101,6 @@ export function registerConflictTestIpc(deps: ConflictTestIpcDeps): void {
 		},
 	);
 
-	/**
-	 * CLEAR_CONFLICT_OVERRIDES -- Clears all overrides.
-	 */
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.CLEAR_CONFLICT_OVERRIDES,
 		async (siteId: string): Promise<ConflictOverrides> => {

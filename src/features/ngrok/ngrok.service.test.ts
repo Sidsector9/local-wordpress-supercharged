@@ -31,7 +31,7 @@ describe('setNgrokConstants', () => {
 });
 
 describe('removeNgrokConstants', () => {
-	it('calls wpCli.run with config delete for both constants', async () => {
+	it('calls config delete for both constants', async () => {
 		const wpCli = createMockWpCli();
 		const site = createMockSite();
 		wpCli.run.mockResolvedValue(undefined);
@@ -39,22 +39,14 @@ describe('removeNgrokConstants', () => {
 		await removeNgrokConstants(wpCli as any, site);
 
 		expect(wpCli.run).toHaveBeenCalledTimes(2);
-		expect(wpCli.run).toHaveBeenCalledWith(
-			site,
-			['config', 'delete', 'WP_HOME', `--path=${site.path}`],
-		);
-		expect(wpCli.run).toHaveBeenCalledWith(
-			site,
-			['config', 'delete', 'WP_SITEURL', `--path=${site.path}`],
-		);
+		expect(wpCli.run).toHaveBeenCalledWith(site, ['config', 'delete', 'WP_HOME', `--path=${site.path}`]);
+		expect(wpCli.run).toHaveBeenCalledWith(site, ['config', 'delete', 'WP_SITEURL', `--path=${site.path}`]);
 	});
 
 	it('does not throw when constants do not exist', async () => {
 		const wpCli = createMockWpCli();
-		const site = createMockSite();
 		wpCli.run.mockRejectedValue(new Error('not defined'));
-
-		await expect(removeNgrokConstants(wpCli as any, site)).resolves.not.toThrow();
+		await expect(removeNgrokConstants(wpCli as any, createMockSite())).resolves.not.toThrow();
 	});
 });
 
@@ -66,7 +58,7 @@ describe('readNgrokCache', () => {
 		expect(readNgrokCache(site)).toEqual({ enabled: true, url: 'https://abcd.ngrok.io' });
 	});
 
-	it('returns undefined when no cache exists', () => {
+	it('returns undefined when no cache', () => {
 		expect(readNgrokCache(createMockSite())).toBeUndefined();
 	});
 });
@@ -86,7 +78,7 @@ describe('writeNgrokCache', () => {
 });
 
 describe('clearNgrokCache', () => {
-	it('removes the ngrok key while preserving other fields', () => {
+	it('removes ngrok key while preserving other fields', () => {
 		const existing = { debugConstants: { WP_DEBUG: true }, ngrok: { enabled: true, url: 'x' } };
 		const site = createMockSite({ id: 's1', superchargedAddon: existing });
 		const siteData = createMockSiteData(site);
@@ -106,7 +98,6 @@ describe('findConflictingSites', () => {
 			's1': createMockSite({ id: 's1', superchargedAddon: { ngrok: { enabled: true, url: 'x1' } } }),
 			's2': createMockSite({ id: 's2', superchargedAddon: { ngrok: { enabled: false, url: 'x1' } } }),
 		});
-
 		expect(findConflictingSites(siteData as any, 'x1', 's3')).toEqual(['s1']);
 	});
 
@@ -115,16 +106,12 @@ describe('findConflictingSites', () => {
 		siteData.getSites.mockReturnValue({
 			's1': createMockSite({ id: 's1', superchargedAddon: { ngrok: { enabled: true, url: 'x1' } } }),
 		});
-
 		expect(findConflictingSites(siteData as any, 'x1', 's1')).toEqual([]);
 	});
 
 	it('returns empty when no conflicts', () => {
 		const siteData = createMockSiteData();
-		siteData.getSites.mockReturnValue({
-			's1': createMockSite({ id: 's1' }),
-		});
-
+		siteData.getSites.mockReturnValue({ 's1': createMockSite({ id: 's1' }) });
 		expect(findConflictingSites(siteData as any, 'x1', 's2')).toEqual([]);
 	});
 });

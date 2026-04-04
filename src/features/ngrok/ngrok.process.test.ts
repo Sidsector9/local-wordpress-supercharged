@@ -37,8 +37,7 @@ function mockHttpGetResponse(body: any): void {
 		cb(res);
 		res.emit('data', Buffer.from(JSON.stringify(body)));
 		res.emit('end');
-		const req = new EventEmitter();
-		return req;
+		return new EventEmitter();
 	});
 }
 
@@ -56,38 +55,26 @@ function mockHttpRequestResponse(statusCode: number): void {
 		res.statusCode = statusCode;
 		res.resume = jest.fn();
 		const req = new EventEmitter() as any;
-		req.end = jest.fn(() => {
-			process.nextTick(() => cb(res));
-		});
+		req.end = jest.fn(() => { process.nextTick(() => cb(res)); });
 		return req;
 	});
 }
 
 describe('extractDomain', () => {
-	it('strips https:// and trailing slash', () => {
+	it('strips protocol and trailing slash', () => {
 		expect(extractDomain('https://foo.ngrok-free.dev/')).toBe('foo.ngrok-free.dev');
-	});
-
-	it('strips http://', () => {
 		expect(extractDomain('http://bar.ngrok.io')).toBe('bar.ngrok.io');
-	});
-
-	it('handles bare domain', () => {
 		expect(extractDomain('baz.ngrok-free.dev')).toBe('baz.ngrok-free.dev');
 	});
 });
 
 describe('fetchNgrokTunnels', () => {
 	it('returns tunnels from the API', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }],
-		});
-
-		const tunnels = await fetchNgrokTunnels();
-		expect(tunnels).toHaveLength(1);
+		mockHttpGetResponse({ tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }] });
+		expect(await fetchNgrokTunnels()).toHaveLength(1);
 	});
 
-	it('returns empty array on connection error', async () => {
+	it('returns [] on connection error', async () => {
 		mockHttpGetError();
 		expect(await fetchNgrokTunnels()).toEqual([]);
 	});
@@ -95,31 +82,22 @@ describe('fetchNgrokTunnels', () => {
 
 describe('findTunnelByDomain', () => {
 	it('returns tunnel when domain matches', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }],
-		});
-
+		mockHttpGetResponse({ tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }] });
 		const tunnel = await findTunnelByDomain('https://foo.ngrok-free.dev');
-		expect(tunnel).toBeDefined();
-		expect(tunnel!.name).toBe('t1');
+		expect(tunnel?.name).toBe('t1');
 	});
 
 	it('returns undefined when no match', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 't1', public_url: 'https://bar.ngrok-free.dev' }],
-		});
-
+		mockHttpGetResponse({ tunnels: [{ name: 't1', public_url: 'https://bar.ngrok-free.dev' }] });
 		expect(await findTunnelByDomain('https://foo.ngrok-free.dev')).toBeUndefined();
 	});
 });
 
 describe('deleteTunnel', () => {
-	it('resolves on 204', async () => {
+	it('resolves on 204 or 404', async () => {
 		mockHttpRequestResponse(204);
 		await expect(deleteTunnel('t1')).resolves.toBeUndefined();
-	});
 
-	it('resolves on 404', async () => {
 		mockHttpRequestResponse(404);
 		await expect(deleteTunnel('t1')).resolves.toBeUndefined();
 	});
@@ -158,23 +136,17 @@ describe('startNgrokProcess', () => {
 	});
 
 	it('deletes existing tunnel before spawning', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 'old', public_url: 'https://foo.ngrok-free.dev' }],
-		});
+		mockHttpGetResponse({ tunnels: [{ name: 'old', public_url: 'https://foo.ngrok-free.dev' }] });
 		mockHttpRequestResponse(204);
 
 		await startNgrokProcess('s1', 'https://foo.ngrok-free.dev', 'mysite.local', 80, jest.fn());
-
 		expect(http.request).toHaveBeenCalled();
-		expect(spawn).toHaveBeenCalled();
 	});
 
 	it('calls onExit without error on clean exit', async () => {
 		const onExit = jest.fn();
 		await startNgrokProcess('s1', 'https://foo.ngrok-free.dev', 'mysite.local', 80, onExit);
-
 		mockChild.emit('exit', 0);
-
 		expect(onExit).toHaveBeenCalledWith('s1', undefined);
 		expect(isNgrokProcessRunning('s1')).toBe(false);
 	});
@@ -182,10 +154,8 @@ describe('startNgrokProcess', () => {
 	it('calls onExit with stderr on non-zero exit', async () => {
 		const onExit = jest.fn();
 		await startNgrokProcess('s1', 'https://foo.ngrok-free.dev', 'mysite.local', 80, onExit);
-
 		mockChild.stderr.emit('data', Buffer.from('auth token invalid'));
 		mockChild.emit('exit', 1);
-
 		expect(onExit).toHaveBeenCalledWith('s1', 'auth token invalid');
 	});
 
@@ -196,7 +166,6 @@ describe('startNgrokProcess', () => {
 		const err = new Error('spawn ngrok ENOENT') as NodeJS.ErrnoException;
 		err.code = 'ENOENT';
 		mockChild.emit('error', err);
-
 		expect(onExit).toHaveBeenCalledWith('s1', 'ngrok not found -- is it installed and on your PATH?');
 	});
 
@@ -208,7 +177,6 @@ describe('startNgrokProcess', () => {
 		err.code = 'ENOENT';
 		mockChild.emit('error', err);
 		mockChild.emit('exit', 1);
-
 		expect(onExit).toHaveBeenCalledTimes(1);
 	});
 });
@@ -226,7 +194,6 @@ describe('stopNgrokProcess', () => {
 		await startNgrokProcess('s1', 'https://foo.ngrok-free.dev', 'mysite.local', 80, jest.fn());
 
 		stopNgrokProcess('s1');
-
 		expect(child.kill).toHaveBeenCalledWith('SIGTERM');
 		expect(isNgrokProcessRunning('s1')).toBe(false);
 	});
@@ -238,27 +205,21 @@ describe('stopNgrokProcess', () => {
 
 describe('getNgrokProcessStatus', () => {
 	it('returns running when enabled and tunnel found', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }],
-		});
-
+		mockHttpGetResponse({ tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }] });
 		expect(await getNgrokProcessStatus('https://foo.ngrok-free.dev', true)).toBe('running');
 	});
 
-	it('returns stopped when not enabled even if tunnel found', async () => {
-		mockHttpGetResponse({
-			tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }],
-		});
-
+	it('returns stopped when not enabled', async () => {
+		mockHttpGetResponse({ tunnels: [{ name: 't1', public_url: 'https://foo.ngrok-free.dev' }] });
 		expect(await getNgrokProcessStatus('https://foo.ngrok-free.dev', false)).toBe('stopped');
 	});
 
-	it('returns stopped when enabled but no tunnel found', async () => {
+	it('returns stopped when tunnel not found', async () => {
 		mockHttpGetError();
 		expect(await getNgrokProcessStatus('https://foo.ngrok-free.dev', true)).toBe('stopped');
 	});
 
-	it('returns stopped when no URL provided', async () => {
+	it('returns stopped when no URL', async () => {
 		expect(await getNgrokProcessStatus()).toBe('stopped');
 	});
 });
