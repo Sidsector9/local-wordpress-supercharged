@@ -88,6 +88,11 @@ export const IPC_CHANNELS = {
 	START_VULN_SCAN: 'supercharged:start-vuln-scan',
 	VULN_SCAN_PROGRESS: 'supercharged:vuln-scan-progress',
 	VULN_SCAN_COMPLETED: 'supercharged:vuln-scan-completed',
+	GET_SITE_STATUS: 'supercharged:get-site-status',
+	SCAN_SNAPSHOTS: 'supercharged:scan-snapshots',
+	TAKE_SNAPSHOT: 'supercharged:take-snapshot',
+	RESTORE_SNAPSHOT: 'supercharged:restore-snapshot',
+	DELETE_SNAPSHOT: 'supercharged:delete-snapshot',
 } as const;
 
 export interface PluginInfo {
@@ -139,4 +144,22 @@ export interface VulnScanResult {
 	scannedLocations: number;
 	globalRootsScanned: string[];
 	cacheRootsScanned: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Snapshots
+// ---------------------------------------------------------------------------
+
+export function slugify( name: string ): string {
+	return name
+		.toLowerCase()
+		.replace( /[^a-z0-9]+/g, '-' )
+		.replace( /^-+|-+$/g, '' );
+}
+
+export interface SnapshotInfo {
+	filename: string;
+	name: string;
+	date: number;
+	size: number;
 }
