@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@getflywheel/local-components": "^17",
+    "adm-zip": "^0.5.17",
     "classnames": "^2.2.6",
     "dateformat": "^3.0.3",
     "fs-extra": "^9.0.1",

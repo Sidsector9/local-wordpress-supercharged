@@ -26,6 +26,13 @@ interface VulnScanPanelProps {
 	site: { id: string };
 }
 
+/**
+ * Registers the Vulnerability Scan panel into the Tools tab via the
+ * siteInfoUtilities content hook.
+ *
+ * @param _React - React instance from the addon context.
+ * @param hooks  - HooksRenderer instance for registering content hooks.
+ */
 export function registerVulnScanHooks(
 	_React: typeof import( 'react' ),
 	hooks: typeof LocalRenderer.HooksRenderer,
@@ -39,6 +46,12 @@ export function registerVulnScanHooks(
 	) );
 }
 
+/**
+ * Parses and validates the textarea input into structured package queries.
+ *
+ * @param raw - Newline-separated "name@version" entries.
+ * @return Parsed packages and an error string (empty if valid).
+ */
 function parseAndValidateInput( raw: string ): { packages: VulnPackageQuery[]; error: string } {
 	const entries = raw.split( /\r?\n/ ).map( ( s ) => s.trim() ).filter( Boolean );
 	if ( entries.length === 0 ) {
@@ -71,6 +84,12 @@ function parseAndValidateInput( raw: string ): { packages: VulnPackageQuery[]; e
 	return { packages, error: '' };
 }
 
+/**
+ * Inline button that copies the given text to the clipboard.
+ *
+ * @param root0      - Props object.
+ * @param root0.text - The text to copy on click.
+ */
 function CopyButton( { text }: { text: string } ) {
 	const { useState, useCallback } = React;
 	const [ copied, setCopied ] = useState( false );
@@ -105,6 +124,13 @@ function CopyButton( { text }: { text: string } ) {
 	);
 }
 
+/**
+ * Vulnerability scan panel. Accepts package@version input, runs scans
+ * across selected scopes, and displays results in a table.
+ *
+ * @param root0      - Props object.
+ * @param root0.site - The current Local site object.
+ */
 function VulnScanPanel( { site }: VulnScanPanelProps ) {
 	const { useState, useEffect, useCallback, useRef } = React;
 
