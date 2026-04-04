@@ -1,5 +1,41 @@
 # Changelog
 
+## Version 2.0 -- [`f494766`](../../commit/f49476608afcadf179b9cb362146feae6cb72919)
+
+### Vulnerability Scan
+
+- Added "Vulnerability Scan" panel under the Tools tab for scanning known vulnerable npm packages
+- Textarea input accepts one package@version per line (e.g. `axios@1.14.1`)
+- Three optional scan scope checkboxes (all unchecked by default):
+  - Scan all Local sites
+  - Scan global installations
+  - Scan package caches
+- Parses lock files as primary source of truth:
+  - `package-lock.json` (v1/v2/v3 formats)
+  - `yarn.lock` (v1 format with scoped package support)
+  - `pnpm-lock.yaml` (v6 and v9 formats, line-based parsing without YAML dependency)
+- Scans installed packages in `node_modules` directories (recursive, up to 10 levels deep) as a secondary check alongside lock files
+- Site scanning checks `site.path/`, `webRoot/wp-content/`, and all theme/plugin subdirectories
+- Uses `site.paths.webRoot` from Local API instead of hardcoding `app/public` -- supports sites with `app/wordpress` or other web root names
+- Global installation scanning:
+  - nvm versions resolved from filesystem (`$NVM_DIR/versions/node/` on Unix, `%NVM_HOME%` on Windows) -- no shell commands needed
+  - pnpm global root resolved from filesystem (`~/Library/pnpm/global/` on macOS, `~/.local/share/pnpm/global/` on Linux, `%LOCALAPPDATA%/pnpm/global/` on Windows)
+  - npm global root from `npm root -g` with filesystem fallback (`/usr/local/lib/node_modules`)
+  - Shell-based detection (`which`/`where`) as primary, filesystem probing as fallback for Electron environments where the user's PATH is not inherited
+  - Deduplication prevents scanning the same node_modules directory via both npm and nvm paths
+- Cache scanning (best-effort): npm `_npx/` directory, yarn cache directory; pnpm store skipped (content-addressable, logged as warning)
+- `extractAbsolutePath()` helper filters update notices and warnings from tool output (e.g. pnpm version upgrade banners)
+- Progress log streams scan status in real time via `VULN_SCAN_PROGRESS` IPC push events; cleared when results arrive
+- Results table shows Package, Version (red), Location with "Copy path" button (uses `electron.clipboard`), Type (Direct/Transitive), and Source (Lock file/node_modules)
+- "Scanned global" and "Scanned caches" summary lines displayed in green above results
+- Cross-platform: macOS, Windows 10/11, Linux (Debian/RPM)
+- Added 3 IPC channels: `START_VULN_SCAN`, `VULN_SCAN_PROGRESS`, `VULN_SCAN_COMPLETED`
+- Added `VulnPackageQuery`, `VulnScanOptions`, `VulnScanMatch`, `VulnScanResult` types
+
+### Housekeeping
+
+- Added `lib/` to `.gitignore` and removed compiled output from repository
+
 ## Version 1.9 -- [`760ffdd`](../../commit/760ffdde26aa26814073357f82b84296b1887e47)
 
 ### Conflict Testing
