@@ -544,15 +544,16 @@ export function parsePnpmLockYaml( content: string ): ParsedDep[] {
 // node_modules traversal
 // ---------------------------------------------------------------------------
 
-const MAX_DEPTH = 10;
-
 /**
  * Recursively scans a node_modules directory for packages matching the targets.
+ * Uses a visited-path set (resolved via realpath) to prevent infinite loops
+ * from circular symlinks instead of an arbitrary depth limit.
  * @param baseDir
  * @param targets
  * @param scope
  * @param locationLabel
  * @param depth
+ * @param visited
  */
 export async function scanNodeModules(
 	baseDir: string,
@@ -560,14 +561,24 @@ export async function scanNodeModules(
 	scope: VulnScanMatch['scope'],
 	locationLabel: string,
 	depth: number = 0,
+	visited: Set<string> = new Set(),
 ): Promise<VulnScanMatch[]> {
-	if ( depth > MAX_DEPTH ) {
-		return [];
-	}
-
 	const nodeModulesDir = depth === 0
 		? path.join( baseDir, 'node_modules' )
 		: baseDir;
+
+	// Resolve symlinks to get the real path and detect cycles
+	let realDir: string;
+	try {
+		realDir = await fs.realpath( nodeModulesDir );
+	} catch {
+		return [];
+	}
+
+	if ( visited.has( realDir ) ) {
+		return [];
+	}
+	visited.add( realDir );
 
 	let entries: string[];
 	try {
@@ -603,7 +614,7 @@ export async function scanNodeModules(
 				// Recurse into nested node_modules
 				const nestedNm = path.join( scopedPath, 'node_modules' );
 				if ( await fs.pathExists( nestedNm ) ) {
-					const nested = await scanNodeModules( nestedNm, targets, scope, locationLabel, depth + 1 );
+					const nested = await scanNodeModules( nestedNm, targets, scope, locationLabel, depth + 1, visited );
 					matches.push( ...nested );
 				}
 			}
@@ -618,7 +629,7 @@ export async function scanNodeModules(
 		// Recurse into nested node_modules
 		const nestedNm = path.join( entryPath, 'node_modules' );
 		if ( await fs.pathExists( nestedNm ) ) {
-			const nested = await scanNodeModules( nestedNm, targets, scope, locationLabel, depth + 1 );
+			const nested = await scanNodeModules( nestedNm, targets, scope, locationLabel, depth + 1, visited );
 			matches.push( ...nested );
 		}
 	}
