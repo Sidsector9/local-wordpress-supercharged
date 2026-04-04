@@ -85,6 +85,9 @@ export const IPC_CHANNELS = {
 	GET_CONFLICT_OVERRIDES: 'supercharged:get-conflict-overrides',
 	SET_CONFLICT_OVERRIDE: 'supercharged:set-conflict-override',
 	CLEAR_CONFLICT_OVERRIDES: 'supercharged:clear-conflict-overrides',
+	START_VULN_SCAN: 'supercharged:start-vuln-scan',
+	VULN_SCAN_PROGRESS: 'supercharged:vuln-scan-progress',
+	VULN_SCAN_COMPLETED: 'supercharged:vuln-scan-completed',
 } as const;
 
 export interface PluginInfo {
@@ -101,3 +104,39 @@ export interface ConflictOverrides {
 
 /** Key is plugin file, value is comma-separated slug list of required plugins. */
 export type PluginDependencyMap = Record<string, string>;
+
+// ---------------------------------------------------------------------------
+// Vulnerability Scan
+// ---------------------------------------------------------------------------
+
+export interface VulnPackageQuery {
+	name: string;
+	version: string;
+}
+
+export interface VulnScanOptions {
+	packages: VulnPackageQuery[];
+	scanAllSites: boolean;
+	includeGlobal: boolean;
+	includeCaches: boolean;
+}
+
+export interface VulnScanMatch {
+	packageName: string;
+	version: string;
+	location: string;
+	locationPath: string;
+	source: 'lock-file' | 'node_modules';
+	depType: 'direct' | 'transitive';
+	scope: 'current-site' | 'local-site' | 'global' | 'cache';
+	siteName?: string;
+}
+
+export interface VulnScanResult {
+	matches: VulnScanMatch[];
+	toolsDetected: string[];
+	errors: string[];
+	scannedLocations: number;
+	globalRootsScanned: string[];
+	cacheRootsScanned: string[];
+}

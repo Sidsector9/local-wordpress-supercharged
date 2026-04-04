@@ -8,6 +8,7 @@ import { registerDebugConstantsIpc } from './features/debug-constants/debug-cons
 import { registerNgrokIpc } from './features/ngrok/ngrok.ipc';
 import { registerProfilerSetupIpc } from './features/profiler-setup/profiler-setup.ipc';
 import { registerConflictTestIpc } from './features/conflict-test/conflict-test.ipc';
+import { registerVulnScanIpc } from './features/vuln-scan/vuln-scan.ipc';
 import { stopNgrokProcess } from './features/ngrok/ngrok.process';
 import { readNgrokCache, writeNgrokCache } from './features/ngrok/ngrok.service';
 
@@ -31,6 +32,7 @@ export default function( context: LocalMain.AddonMainContext ): void {
 		registerProfilerSetupIpc( { siteData, lightningServices, siteProcessManager, logger } );
 	}
 	registerConflictTestIpc( { wpCli, siteData, logger } );
+	registerVulnScanIpc( { siteData, logger } );
 
 	// Auto-cleanup ngrok when a site is stopped
 	context.hooks.addAction( 'siteStopped', ( site: any ) => {

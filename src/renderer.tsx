@@ -8,6 +8,7 @@ import { registerDebugConstantsHooks } from './features/debug-constants/DebugSwi
 import { registerNgrokHooks } from './features/ngrok/NgrokRow';
 import { registerProfilerSetupHooks } from './features/profiler-setup/profiler-setup.hooks';
 import { registerConflictTestHooks } from './features/conflict-test/ConflictTestPanel';
+import { registerVulnScanHooks } from './features/vuln-scan/VulnScanPanel';
 
 /**
  * Renderer process entry point. Registers UI hooks for all addon features
@@ -24,4 +25,5 @@ export default function( context: LocalRenderer.AddonRendererContext ): void {
 		registerProfilerSetupHooks( React, hooks );
 	}
 	registerConflictTestHooks( React, hooks );
+	registerVulnScanHooks( React, hooks );
 }
