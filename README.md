@@ -1,12 +1,27 @@
 # Local WordPress Supercharged
 
-A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- toggle debug constants, test plugin conflicts, start ngrok tunnels, and more.
+A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- scan for vulnerable packages, toggle debug constants, test plugin conflicts, start ngrok tunnels, and more.
 
 ## Features
 
+- [Vulnerability Scan](#vulnerability-scan)
 - [Conflict Testing](#conflict-testing)
 - [One-Click ngrok Tunnels](#one-click-ngrok-tunnels)
 - [Toggle Debug Constants](#toggle-debug-constants)
+
+### Vulnerability Scan
+
+Scan for known vulnerable npm packages across your Local sites, global installations, and package manager caches. Enter package names and versions, check the scopes you want, and hit Scan.
+
+![vulnerability scanner demo](gifs/vulnerability-scanner.gif)
+
+- **Cross-package-manager** -- parses `package-lock.json`, `yarn.lock`, and `pnpm-lock.yaml`
+- **Deep node_modules scanning** -- recursively walks installed packages
+- **Global installs** -- scans all nvm versions, pnpm global, and npm global root
+- **Cache scanning** -- checks npm and yarn caches (best-effort)
+- **All Local sites** -- optionally scan every site in one pass
+- **Copy path** -- clipboard button on each result for quick navigation
+- **Cross-platform** -- macOS, Windows 10/11, Linux (Debian/RPM)
 
 ### Conflict Testing
 
@@ -76,6 +91,7 @@ src/
   renderer.tsx          # Renderer process entry point
   shared/types.ts       # Shared types, constants, IPC channels
   features/
+    vuln-scan/          # Vulnerability scanner feature
     debug-constants/    # WP_DEBUG toggle feature
     ngrok/              # ngrok tunnel feature
     conflict-test/      # Plugin conflict testing feature
