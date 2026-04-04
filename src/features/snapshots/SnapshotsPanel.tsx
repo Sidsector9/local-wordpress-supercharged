@@ -168,7 +168,7 @@ function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 			} }>
 				<table style={ { width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' } }>
 					<colgroup>
-						<col style={ { width: '50px' } } />
+						<col style={ { width: '65px' } } />
 						<col />
 						<col style={ { width: '180px' } } />
 						<col style={ { width: '100px' } } />
@@ -179,8 +179,8 @@ function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Sr. No.</th>
 							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Snapshot Name</th>
 							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Date</th>
-							<th style={ { padding: '8px 12px', textAlign: 'center' } }>Restore</th>
-							<th style={ { padding: '8px 12px', textAlign: 'center' } }>Delete</th>
+							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Restore</th>
+							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Delete</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -198,7 +198,7 @@ function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 									<td style={ { padding: '6px 12px', color: '#999' } }>
 										{ dateformat( new Date( snap.date ), 'mmm d, yyyy h:MM TT' ) }
 									</td>
-									<td style={ { padding: '6px 12px', textAlign: 'center' } }>
+									<td style={ { padding: '6px 12px', textAlign: 'left' } }>
 										<TextButton
 											onClick={ () => handleRestore( snap.filename ) }
 											disabled={ restoring !== null || deleting !== null || ! siteRunning }
@@ -207,7 +207,7 @@ function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 											{ restoring === snap.filename ? 'Restoring...' : 'Restore' }
 										</TextButton>
 									</td>
-									<td style={ { padding: '6px 12px', textAlign: 'center' } }>
+									<td style={ { padding: '6px 12px', textAlign: 'left' } }>
 										<TextButton
 											onClick={ () => handleDelete( snap.filename ) }
 											disabled={ restoring !== null || deleting !== null }
