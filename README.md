@@ -4,6 +4,10 @@ A [Local by Flywheel](https://localwp.com/) addon that supercharges your local W
 
 ## Features
 
+- [Conflict Testing](#conflict-testing)
+- [One-Click ngrok Tunnels](#one-click-ngrok-tunnels)
+- [Toggle Debug Constants](#toggle-debug-constants)
+
 ### Conflict Testing
 
 Test plugin conflicts without modifying the database. Toggle plugins on/off via filter hooks -- changes take effect on the next page load and can be reset instantly.
