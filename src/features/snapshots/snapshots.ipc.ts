@@ -14,10 +14,16 @@ export interface SnapshotsIpcDeps {
 	logger: { info: ( msg: string ) => void; warn: ( msg: string ) => void };
 }
 
+/**
+ * Registers all IPC listeners for the snapshots feature.
+ *
+ * @param deps - Service dependencies injected from main.ts.
+ */
 export function registerSnapshotsIpc( deps: SnapshotsIpcDeps ): void {
 	const { wpCli, siteData, siteDatabase, logger } = deps;
 	const appState = LocalMain.getServiceContainer().cradle.appState;
 
+	// GET_SITE_STATUS -- Returns the current site status from appState.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.GET_SITE_STATUS,
 		async ( siteId: string ): Promise<string> => {
@@ -26,6 +32,7 @@ export function registerSnapshotsIpc( deps: SnapshotsIpcDeps ): void {
 		},
 	);
 
+	// SCAN_SNAPSHOTS -- Lists all .zip snapshots in app/sql/. Returns [] on error.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.SCAN_SNAPSHOTS,
 		async ( siteId: string ): Promise<SnapshotInfo[]> => {
@@ -39,6 +46,7 @@ export function registerSnapshotsIpc( deps: SnapshotsIpcDeps ): void {
 		},
 	);
 
+	// TAKE_SNAPSHOT -- Creates a new snapshot. Errors propagate to the renderer.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.TAKE_SNAPSHOT,
 		async ( siteId: string, name: string ): Promise<SnapshotInfo> => {
@@ -55,6 +63,7 @@ export function registerSnapshotsIpc( deps: SnapshotsIpcDeps ): void {
 		},
 	);
 
+	// RESTORE_SNAPSHOT -- Restores a database from a .zip snapshot.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.RESTORE_SNAPSHOT,
 		async ( siteId: string, filename: string ): Promise<{ success: boolean }> => {
@@ -65,6 +74,7 @@ export function registerSnapshotsIpc( deps: SnapshotsIpcDeps ): void {
 		},
 	);
 
+	// DELETE_SNAPSHOT -- Deletes a .zip snapshot file from app/sql/.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.DELETE_SNAPSHOT,
 		async ( siteId: string, filename: string ): Promise<{ success: boolean }> => {

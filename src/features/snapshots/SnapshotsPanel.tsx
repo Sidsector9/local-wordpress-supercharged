@@ -1,8 +1,10 @@
 /**
  * SnapshotsPanel.tsx -- React component and hook registration for database snapshots.
  *
- * Displays a table of .sql snapshots in app/sql/, allows creating new
- * snapshots and restoring existing ones via WP-CLI.
+ * Renders a scrollable table of .zip snapshots stored in app/sql/ with
+ * create, restore, and delete controls. Snapshot creation and restore
+ * are disabled when the site is not running. Duplicate snapshot names
+ * are detected client-side as the user types.
  */
 
 import * as LocalRenderer from '@getflywheel/local/renderer';
@@ -17,6 +19,13 @@ interface SnapshotsPanelProps {
 	site: { id: string; status: string };
 }
 
+/**
+ * Registers the Snapshots panel into the Database tab via the
+ * SiteInfoDatabase_TableList content hook.
+ *
+ * @param _React - React instance from the addon context.
+ * @param hooks  - HooksRenderer instance for registering content hooks.
+ */
 export function registerSnapshotsHooks(
 	_React: typeof import( 'react' ),
 	hooks: typeof LocalRenderer.HooksRenderer,
@@ -30,6 +39,13 @@ export function registerSnapshotsHooks(
 	) );
 }
 
+/**
+ * Snapshots management panel. Polls site status every 3 seconds to
+ * enable/disable database-dependent actions.
+ *
+ * @param root0      - Props object.
+ * @param root0.site - The current Local site object.
+ */
 function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 	const { useState, useEffect, useCallback, useMemo } = React;
 

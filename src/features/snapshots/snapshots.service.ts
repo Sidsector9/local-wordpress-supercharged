@@ -12,14 +12,33 @@ import { SnapshotInfo, slugify } from '../../shared/types';
 
 export { slugify };
 
+/**
+ * Resolves the site filesystem path, expanding ~ to the user home directory.
+ *
+ * @param site - The Local site object.
+ * @return Absolute path to the site root.
+ */
 export function resolveSitePath( site: Local.Site ): string {
 	return LocalMain.formatHomePath( site.path );
 }
 
+/**
+ * Returns the absolute path to the site app/sql/ directory where snapshots are stored.
+ *
+ * @param site - The Local site object.
+ * @return Absolute path to app/sql/.
+ */
 export function getSqlDir( site: Local.Site ): string {
 	return path.join( resolveSitePath( site ), 'app', 'sql' );
 }
 
+/**
+ * Scans the app/sql/ directory for .zip snapshot files and returns metadata
+ * for each, sorted by date descending (newest first).
+ *
+ * @param site - The Local site object.
+ * @return Array of snapshot metadata objects.
+ */
 export async function scanSnapshots( site: Local.Site ): Promise<SnapshotInfo[]> {
 	const sqlDir = getSqlDir( site );
 	await fs.ensureDir( sqlDir );
@@ -42,6 +61,17 @@ export async function scanSnapshots( site: Local.Site ): Promise<SnapshotInfo[]>
 	return snapshots;
 }
 
+/**
+ * Creates a new database snapshot. Purges transients, dumps the database
+ * to a .sql file, compresses it into a .zip archive, and removes the
+ * intermediate .sql file.
+ *
+ * @param siteDatabase - Local SiteDatabase service for dump operations.
+ * @param wpCli        - Local WP-CLI service for transient cleanup.
+ * @param site         - The Local site object.
+ * @param name         - Human-readable snapshot name (will be slugified).
+ * @return Metadata for the created snapshot.
+ */
 export async function takeSnapshot(
 	siteDatabase: LocalMain.Services.SiteDatabase,
 	wpCli: LocalMain.Services.WpCli,
@@ -89,6 +119,15 @@ export async function takeSnapshot(
 	};
 }
 
+/**
+ * Restores a database from a .zip snapshot. Extracts the .sql file,
+ * imports it into the site database, and cleans up the extracted file
+ * regardless of success or failure.
+ *
+ * @param siteDatabase - Local SiteDatabase service for import operations.
+ * @param site         - The Local site object.
+ * @param filename     - The .zip filename to restore from.
+ */
 export async function restoreSnapshot(
 	siteDatabase: LocalMain.Services.SiteDatabase,
 	site: Local.Site,
@@ -119,6 +158,12 @@ export async function restoreSnapshot(
 	}
 }
 
+/**
+ * Deletes a snapshot .zip file from the app/sql/ directory.
+ *
+ * @param site     - The Local site object.
+ * @param filename - The .zip filename to delete.
+ */
 export async function deleteSnapshot( site: Local.Site, filename: string ): Promise<void> {
 	const sqlDir = getSqlDir( site );
 	const zipPath = path.join( sqlDir, filename );
