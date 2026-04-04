@@ -66,5 +66,8 @@ typings/
 # next.js build output
 .next
 
+# Compiled output
+lib/
+
 # macOS files
 .DS_Store
