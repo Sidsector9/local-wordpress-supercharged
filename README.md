@@ -4,10 +4,22 @@ A [Local by Flywheel](https://localwp.com/) addon that supercharges your local W
 
 ## Features
 
+- [Database Snapshots](#database-snapshots)
 - [Vulnerability Scan](#vulnerability-scan)
 - [Conflict Testing](#conflict-testing)
 - [One-Click ngrok Tunnels](#one-click-ngrok-tunnels)
 - [Toggle Debug Constants](#toggle-debug-constants)
+
+### Database Snapshots
+
+Create, restore, and delete database snapshots directly from the Database tab. Snapshots are dumped, zipped, and stored under `app/sql/` -- ready to roll back whenever you need.
+
+![database snapshots demo](gifs/db-snapshots.png)
+
+- **One-click create** -- purges transients, dumps the database, and compresses it into a `.zip` in a single step
+- **Instant restore** -- extracts and imports any snapshot back into the running site
+- **Delete anytime** -- removes snapshots regardless of whether the site is running
+- **Scan** -- lists every snapshot with name and date, sorted newest first
 
 ### Vulnerability Scan
 

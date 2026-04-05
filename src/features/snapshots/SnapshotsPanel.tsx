@@ -165,7 +165,7 @@ function SnapshotsPanel( { site }: SnapshotsPanelProps ) {
 					Create and restore database snapshots stored in app/sql/.
 				</span>
 				<TextButton onClick={ scan } disabled={ loading } style={ { paddingLeft: 0 } }>
-					Scan
+					Refresh List
 				</TextButton>
 			</div>
 
