@@ -11,3 +11,5 @@ export const getServiceContainer = jest.fn();
 export const sendIPCEvent = jest.fn();
 
 export const addIpcAsyncListener = jest.fn();
+
+export const formatHomePath = jest.fn( ( p: string ) => p.replace( /^~/, '/Users/test' ) );

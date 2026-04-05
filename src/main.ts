@@ -9,6 +9,7 @@ import { registerNgrokIpc } from './features/ngrok/ngrok.ipc';
 import { registerProfilerSetupIpc } from './features/profiler-setup/profiler-setup.ipc';
 import { registerConflictTestIpc } from './features/conflict-test/conflict-test.ipc';
 import { registerVulnScanIpc } from './features/vuln-scan/vuln-scan.ipc';
+import { registerSnapshotsIpc } from './features/snapshots/snapshots.ipc';
 import { stopNgrokProcess } from './features/ngrok/ngrok.process';
 import { readNgrokCache, writeNgrokCache } from './features/ngrok/ngrok.service';
 
@@ -19,7 +20,7 @@ import { readNgrokCache, writeNgrokCache } from './features/ngrok/ngrok.service'
  * @param context
  */
 export default function( context: LocalMain.AddonMainContext ): void {
-	const { wpCli, siteData, localLogger, lightningServices, siteProcessManager } = LocalMain.getServiceContainer().cradle;
+	const { wpCli, siteData, siteDatabase, localLogger, lightningServices, siteProcessManager } = LocalMain.getServiceContainer().cradle;
 
 	const logger = localLogger.child( {
 		thread: 'main',
@@ -33,6 +34,7 @@ export default function( context: LocalMain.AddonMainContext ): void {
 	}
 	registerConflictTestIpc( { wpCli, siteData, logger } );
 	registerVulnScanIpc( { siteData, logger } );
+	registerSnapshotsIpc( { wpCli, siteData, siteDatabase, logger } );
 
 	// Auto-cleanup ngrok when a site is stopped
 	context.hooks.addAction( 'siteStopped', ( site: any ) => {

@@ -12,9 +12,16 @@ export interface VulnScanIpcDeps {
 	logger: { info: ( msg: string ) => void; warn: ( msg: string ) => void };
 }
 
+/**
+ * Registers the IPC listener for the vulnerability scan feature.
+ *
+ * @param deps - Service dependencies injected from main.ts.
+ */
 export function registerVulnScanIpc( deps: VulnScanIpcDeps ): void {
 	const { siteData, logger } = deps;
 
+	// START_VULN_SCAN -- Runs a vulnerability scan across requested scopes
+	// and streams progress events to the renderer.
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.START_VULN_SCAN,
 		async ( siteId: string, options: VulnScanOptions ): Promise<VulnScanResult> => {
