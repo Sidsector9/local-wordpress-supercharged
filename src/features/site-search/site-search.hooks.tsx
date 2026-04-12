@@ -45,7 +45,9 @@ async function buildDomainMap(): Promise<void> {
 	try {
 		const gql = ( LocalRenderer as any ).gql;
 		const client = ( LocalRenderer as any ).localApolloClient;
-		if ( ! client || ! gql ) return;
+		if ( ! client || ! gql ) {
+			return;
+		}
 
 		const result = await client.query( {
 			query: gql`{ sites { id domain } }`,
@@ -76,7 +78,9 @@ async function buildDomainMap(): Promise<void> {
  */
 function getSiteItems(): HTMLElement[] {
 	const nav = document.getElementById( 'SiteList' );
-	if ( ! nav ) return [];
+	if ( ! nav ) {
+		return [];
+	}
 
 	const all = nav.querySelectorAll( 'div[draggable="true"]' );
 	const items: HTMLElement[] = [];
@@ -95,6 +99,8 @@ function getSiteItems(): HTMLElement[] {
  * Toggles visibility of site items that don't match the search term.
  * Matches against site name (data-site-name) and domain (from GraphQL).
  * An empty term restores all items.
+ *
+ * @param term - The search string to filter by.
  */
 function filterSiteList( term: string ): void {
 	const normalizedTerm = term.toLowerCase().trim();
