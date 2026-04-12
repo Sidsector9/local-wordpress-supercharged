@@ -10,6 +10,7 @@ import { registerProfilerSetupHooks } from './features/profiler-setup/profiler-s
 import { registerConflictTestHooks } from './features/conflict-test/ConflictTestPanel';
 import { registerVulnScanHooks } from './features/vuln-scan/VulnScanPanel';
 import { registerSnapshotsHooks } from './features/snapshots/SnapshotsPanel';
+import { registerSiteSearchHooks } from './features/site-search/site-search.hooks';
 
 /**
  * Renderer process entry point. Registers UI hooks for all addon features
@@ -20,6 +21,7 @@ import { registerSnapshotsHooks } from './features/snapshots/SnapshotsPanel';
 export default function( context: LocalRenderer.AddonRendererContext ): void {
 	const { React, hooks } = context;
 
+	registerSiteSearchHooks( React, hooks );
 	registerDebugConstantsHooks( React, hooks );
 	registerNgrokHooks( React, hooks );
 	if ( FEATURE_FLAGS.PROFILER ) {
