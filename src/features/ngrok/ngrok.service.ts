@@ -6,6 +6,7 @@
 import * as Local from '@getflywheel/local';
 import * as LocalMain from '@getflywheel/local/main';
 import { NgrokCache, NGROK_CONSTANTS, SuperchargedCache } from '../../shared/types';
+import { readSuperchargedCache, writeSuperchargedCache } from '../../shared/cache';
 
 export async function setNgrokConstants(
 	wpCli: LocalMain.Services.WpCli,
@@ -31,8 +32,7 @@ export async function removeNgrokConstants(
 }
 
 export function readNgrokCache( site: Local.Site ): NgrokCache | undefined {
-	const cache = ( site as any ).superchargedAddon as SuperchargedCache | undefined;
-	return cache?.ngrok;
+	return readSuperchargedCache( site )?.ngrok;
 }
 
 export function writeNgrokCache(
@@ -40,16 +40,7 @@ export function writeNgrokCache(
 	siteId: string,
 	ngrok: NgrokCache,
 ): void {
-	const site = siteData.getSite( siteId );
-	const existing = ( site as any )?.superchargedAddon || {};
-
-	siteData.updateSite( siteId, {
-		id: siteId,
-		superchargedAddon: {
-			...existing,
-			ngrok,
-		},
-	} as Partial<Local.SiteJSON> );
+	writeSuperchargedCache( siteData, siteId, { ngrok } );
 }
 
 export function clearNgrokCache(
@@ -57,7 +48,7 @@ export function clearNgrokCache(
 	siteId: string,
 ): void {
 	const site = siteData.getSite( siteId );
-	const existing = ( site as any )?.superchargedAddon || {};
+	const existing = readSuperchargedCache( site ) || {} as SuperchargedCache;
 	const { ngrok: _removed, ...rest } = existing;
 
 	siteData.updateSite( siteId, {
