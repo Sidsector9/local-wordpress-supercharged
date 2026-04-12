@@ -1,5 +1,26 @@
 # Changelog
 
+## Version 2.2 -- [`bb1231f`](../../commit/bb1231f76ad46cdc41b6dc5b7e6385f25fb69c53)
+
+### Sidebar Site Search
+
+- Added a sticky search input above the site list in the sidebar via the `SitesSidebar_SiteList:Before` content hook
+- Search input stays pinned at the top while the site list scrolls (`position: sticky; top: 0`)
+- Filters the site list in real time by matching against both the site name (`data-site-name` attribute) and the site domain/URL (fetched from GraphQL via `localApolloClient`)
+- DOM-based filtering: site items are classless `div[draggable="true"]` inside `<nav id="SiteList">`; non-matching items are hidden via `display: none`
+- On mount, queries `{ sites { id domain } }` via Apollo GraphQL and builds a siteId-to-domain lookup map for URL-based search
+- Clearing the search field restores full visibility of all sites
+- Uses `InputSearch` from `@getflywheel/local-components` for consistent styling
+- Renderer-only feature -- no IPC channels or main process changes required
+
+### Files added
+
+- `src/features/site-search/site-search.hooks.tsx` -- sticky search input component, domain lookup via GraphQL, and hook registration
+
+### Files modified
+
+- `src/renderer.tsx` -- wired `registerSiteSearchHooks`
+
 ## Version 2.1 -- [`f8eebe7`](../../commit/f8eebe7c8ae6b986216b42bb76a034dd7373177d)
 
 ### Database Snapshots
