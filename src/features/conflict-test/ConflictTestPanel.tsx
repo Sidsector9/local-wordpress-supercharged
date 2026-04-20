@@ -6,7 +6,7 @@
  */
 
 import * as LocalRenderer from '@getflywheel/local/renderer';
-import { TableListRow, TextButton } from '@getflywheel/local-components';
+import { TableListRow, TextButton, RefreshButton } from '@getflywheel/local-components';
 import { IPC_CHANNELS, PluginInfo, ConflictOverrides, PluginDependencyMap } from '../../shared/types';
 
 let React: typeof import( 'react' );
@@ -44,6 +44,7 @@ function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ updating, setUpdating ] = useState<Record<string, boolean>>( {} );
+	const [ bulkUpdating, setBulkUpdating ] = useState( false );
 
 	const fetchData = useCallback( async () => {
 		setLoading( true );
@@ -112,6 +113,43 @@ function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 		}
 	}, [ site.id ] );
 
+	/**
+	 * True when every plugin's effective state (override if present, else DB status)
+	 * is active. Drives the checked state of the bulk toggle in the "Active" header.
+	 */
+	const allActive = plugins.length > 0 && plugins.every( ( p ) => {
+		if ( p.file in overrides.overrides ) {
+			return overrides.overrides[ p.file ];
+		}
+		return p.status === 'active';
+	} );
+
+	/**
+	 * Activates or deactivates every plugin in one IPC round-trip.
+	 * If all plugins are currently active, this deactivates them all; otherwise
+	 * it activates them all. Bound to the checkbox in the "Active" column header.
+	 */
+	const handleToggleAll = useCallback( async () => {
+		if ( plugins.length === 0 ) {
+			return;
+		}
+		const nextActive = ! allActive;
+		setBulkUpdating( true );
+		try {
+			const result: ConflictOverrides = await LocalRenderer.ipcAsync(
+				IPC_CHANNELS.BULK_SET_CONFLICT_OVERRIDES,
+				site.id,
+				plugins.map( ( p ) => p.file ),
+				nextActive,
+			);
+			setOverrides( result );
+		} catch {
+			// ignore
+		} finally {
+			setBulkUpdating( false );
+		}
+	}, [ site.id, plugins, allActive ] );
+
 	if ( loading ) {
 		return <div style={ { fontSize: '13px', color: '#999' } }>Loading plugins...</div>;
 	}
@@ -135,11 +173,16 @@ function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 				<span style={ { fontSize: '13px', color: '#999' } }>
 					Toggle plugins on/off without modifying the database. Changes take effect on next page load.
 				</span>
-				{ hasAnyOverrides && (
-					<TextButton onClick={ handleReset } style={ { paddingLeft: 0 } }>
-						Reset All
-					</TextButton>
-				) }
+				<div style={ { display: 'flex', alignItems: 'center', gap: '16px' } }>
+					<span title="Refresh plugin list">
+						<RefreshButton onClick={ fetchData } disabled={ loading } />
+					</span>
+					{ hasAnyOverrides && (
+						<TextButton onClick={ handleReset } style={ { paddingLeft: 0 } }>
+							Reset All
+						</TextButton>
+					) }
+				</div>
 			</div>
 
 			<div style={ {
@@ -154,7 +197,23 @@ function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 							<th style={ { padding: '8px 12px', textAlign: 'left', width: '30px' } }>DB</th>
 							<th style={ { padding: '8px 12px', textAlign: 'left' } }>Plugins</th>
 							<th style={ { padding: '8px 12px', textAlign: 'left', width: '80px' } }>Version</th>
-							<th style={ { padding: '8px 12px', textAlign: 'center', width: '70px' } }>Active</th>
+							<th style={ { padding: '8px 12px', textAlign: 'center', width: '90px' } }>
+								<span style={ { display: 'inline-flex', alignItems: 'center', gap: '6px' } }>
+									<input
+										type="checkbox"
+										checked={ allActive }
+										disabled={ bulkUpdating }
+										onChange={ handleToggleAll }
+										style={ { cursor: bulkUpdating ? 'wait' : 'pointer' } }
+										title={
+											allActive
+												? 'Deactivate all plugins'
+												: 'Activate all plugins'
+										}
+									/>
+									Active
+								</span>
+							</th>
 						</tr>
 					</thead>
 					<tbody>

@@ -101,6 +101,30 @@ export function registerConflictTestIpc( deps: ConflictTestIpcDeps ): void {
 		},
 	);
 
+	// BULK_SET_CONFLICT_OVERRIDES -- Sets the same override state for many plugins in one call.
+	// Cascade logic is intentionally skipped: the caller is setting every listed plugin
+	// to the same state, so dependency cascades would be redundant.
+	LocalMain.addIpcAsyncListener(
+		IPC_CHANNELS.BULK_SET_CONFLICT_OVERRIDES,
+		async ( siteId: string, pluginFiles: string[], active: boolean ): Promise<ConflictOverrides> => {
+			const site = siteData.getSite( siteId ) as unknown as Local.Site;
+			const plugins = pluginsCache[ siteId ] || [];
+
+			for ( const pluginFile of pluginFiles ) {
+				const plugin = plugins.find( ( p ) => p.file === pluginFile );
+				if ( ! plugin ) {
+					continue;
+				}
+				writeOverride( site, pluginFile, active, plugin.status );
+			}
+
+			logger.info(
+				`Bulk conflict override: ${ pluginFiles.length } plugins -> ${ active ? 'active' : 'inactive' }`,
+			);
+			return readOverrides( site );
+		},
+	);
+
 	LocalMain.addIpcAsyncListener(
 		IPC_CHANNELS.CLEAR_CONFLICT_OVERRIDES,
 		async ( siteId: string ): Promise<ConflictOverrides> => {
