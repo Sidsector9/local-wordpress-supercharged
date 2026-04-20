@@ -84,6 +84,7 @@ export const IPC_CHANNELS = {
 	GET_PLUGIN_LIST: 'supercharged:get-plugin-list',
 	GET_CONFLICT_OVERRIDES: 'supercharged:get-conflict-overrides',
 	SET_CONFLICT_OVERRIDE: 'supercharged:set-conflict-override',
+	BULK_SET_CONFLICT_OVERRIDES: 'supercharged:bulk-set-conflict-overrides',
 	CLEAR_CONFLICT_OVERRIDES: 'supercharged:clear-conflict-overrides',
 	START_VULN_SCAN: 'supercharged:start-vuln-scan',
 	VULN_SCAN_PROGRESS: 'supercharged:vuln-scan-progress',
