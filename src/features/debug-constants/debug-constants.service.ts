@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as Local from '@getflywheel/local';
 import * as LocalMain from '@getflywheel/local/main';
 import { CACHE_VERSION, DEBUG_CONSTANTS, DebugConstantName, DebugConstantsMap, SuperchargedCache, WP_DEFAULTS } from '../../shared/types';
+import { readSuperchargedCache, writeSuperchargedCache } from '../../shared/cache';
 
 export function getWpConfigPath( site: Local.Site ): string {
 	return path.join( site.paths.webRoot, 'wp-config.php' );
@@ -83,7 +84,7 @@ export async function deleteConstant(
 }
 
 export function readCache( site: Local.Site ): SuperchargedCache | undefined {
-	return ( site as any ).superchargedAddon as SuperchargedCache | undefined;
+	return readSuperchargedCache( site );
 }
 
 export function writeCache(
@@ -91,16 +92,9 @@ export function writeCache(
 	siteId: string,
 	cache: DebugConstantsMap,
 ): void {
-	const site = siteData.getSite( siteId );
-	const existing = ( site as any )?.superchargedAddon || {};
-
-	siteData.updateSite( siteId, {
-		id: siteId,
-		superchargedAddon: {
-			...existing,
-			debugConstants: cache,
-			cachedAt: Date.now(),
-			cacheVersion: CACHE_VERSION,
-		},
-	} as Partial<Local.SiteJSON> );
+	writeSuperchargedCache( siteData, siteId, {
+		debugConstants: cache,
+		cachedAt: Date.now(),
+		cacheVersion: CACHE_VERSION,
+	} );
 }

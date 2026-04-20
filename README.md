@@ -1,13 +1,36 @@
 # Local WordPress Supercharged
 
-A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- scan for vulnerable packages, toggle debug constants, test plugin conflicts, start ngrok tunnels, and more.
+A [Local by Flywheel](https://localwp.com/) addon that supercharges your local WordPress development workflow -- search sites instantly, scan for vulnerable packages, toggle debug constants, test plugin conflicts, start ngrok tunnels, and more.
 
 ## Features
 
+- [Site Search](#site-search)
+- [Database Snapshots](#database-snapshots)
 - [Vulnerability Scan](#vulnerability-scan)
 - [Conflict Testing](#conflict-testing)
 - [One-Click ngrok Tunnels](#one-click-ngrok-tunnels)
 - [Toggle Debug Constants](#toggle-debug-constants)
+
+### Site Search
+
+Find any site instantly by name or URL. A sticky search input at the top of the sidebar filters the site list in real time as you type.
+
+![site search demo](gifs/site-search.gif)
+
+- **Name + URL matching** -- searches against both site name and domain
+- **Sticky input** -- stays pinned at the top while you scroll through results
+- **Instant filtering** -- non-matching sites are hidden on each keystroke
+
+### Database Snapshots
+
+Create, restore, and delete database snapshots directly from the Database tab. Snapshots are dumped, zipped, and stored under `app/sql/` -- ready to roll back whenever you need.
+
+![database snapshots demo](gifs/db-snapshots.png)
+
+- **One-click create** -- purges transients, dumps the database, and compresses it into a `.zip` in a single step
+- **Instant restore** -- extracts and imports any snapshot back into the running site
+- **Delete anytime** -- removes snapshots regardless of whether the site is running
+- **Scan** -- lists every snapshot with name and date, sorted newest first
 
 ### Vulnerability Scan
 
@@ -91,6 +114,8 @@ src/
   renderer.tsx          # Renderer process entry point
   shared/types.ts       # Shared types, constants, IPC channels
   features/
+    site-search/        # Sidebar site search feature
+    snapshots/          # Database snapshots feature
     vuln-scan/          # Vulnerability scanner feature
     debug-constants/    # WP_DEBUG toggle feature
     ngrok/              # ngrok tunnel feature

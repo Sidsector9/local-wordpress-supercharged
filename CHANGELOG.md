@@ -1,5 +1,42 @@
 # Changelog
 
+## Version 2.2 -- [`bb1231f`](../../commit/bb1231f76ad46cdc41b6dc5b7e6385f25fb69c53)
+
+### Sidebar Site Search
+
+- Added a sticky search input above the site list in the sidebar via the `SitesSidebar_SiteList:Before` content hook
+- Search input stays pinned at the top while the site list scrolls (`position: sticky; top: 0`)
+- Filters the site list in real time by matching against both the site name (`data-site-name` attribute) and the site domain/URL (fetched from GraphQL via `localApolloClient`)
+- DOM-based filtering: site items are classless `div[draggable="true"]` inside `<nav id="SiteList">`; non-matching items are hidden via `display: none`
+- On mount, queries `{ sites { id domain } }` via Apollo GraphQL and builds a siteId-to-domain lookup map for URL-based search
+- Clearing the search field restores full visibility of all sites
+- Uses `InputSearch` from `@getflywheel/local-components` for consistent styling
+- Renderer-only feature -- no IPC channels or main process changes required
+
+### Files added
+
+- `src/features/site-search/site-search.hooks.tsx` -- sticky search input component, domain lookup via GraphQL, and hook registration
+
+### Files modified
+
+- `src/renderer.tsx` -- wired `registerSiteSearchHooks`
+
+## Version 2.1 -- [`f8eebe7`](../../commit/f8eebe7c8ae6b986216b42bb76a034dd7373177d)
+
+### Database Snapshots
+
+- Added "Snapshots" section under the Database tab for creating, restoring, and deleting database snapshots stored as `.zip` files in `app/sql/`
+- **Create**: purges transients via WP-CLI (`wp transient delete --all`), dumps the database to a `.sql` file, compresses it into a `.zip` via `adm-zip`, and removes the intermediate `.sql` file to minimize disk utilization
+- **Restore**: extracts the `.sql` from the `.zip`, imports it using the site's MySQL database name (falling back to `local`), and always cleans up the extracted file in a `finally` block
+- **Delete**: removes the `.zip` file from `app/sql/`
+- **Scan**: lists all `.zip` snapshots with serial number, name, and modification date, sorted newest first
+- Create and Restore require the site to be running; Delete works regardless of site status
+- Snapshot names are slugified and collisions on existing filenames are rejected with an error
+- Snapshots table shows Sr. No., Snapshot Name, Date, Restore and Delete actions, with an input field and "Take a snapshot" button for creating new snapshots and a "Scan" button to refresh the list
+- Added 4 IPC channels: `SCAN_SNAPSHOTS`, `TAKE_SNAPSHOT`, `RESTORE_SNAPSHOT`, `DELETE_SNAPSHOT`
+- Added `SnapshotInfo` type and `slugify` helper to `shared/types.ts`
+- Added `adm-zip` as a runtime dependency for archive handling
+
 ## Version 2.0 -- [`f494766`](../../commit/f49476608afcadf179b9cb362146feae6cb72919)
 
 ### Vulnerability Scan
