@@ -275,8 +275,7 @@ function ConflictTestPanel( { site }: ConflictTestPanelProps ) {
 				<strong>DB</strong> = the plugin&apos;s real status in the database (green = active, gray = inactive).
 				This does not change when you toggle.<br />
 				<strong>Active</strong> = whether the plugin will actually load on the next page request.
-				Uncheck to deactivate a plugin for testing without modifying the database.<br />
-				The checkbox in the <strong>Active</strong> column header = activates or deactivates all plugins at once.
+				Uncheck to deactivate a plugin for testing without modifying the database.
 			</div>
 		</div>
 	);
